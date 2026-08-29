@@ -247,6 +247,14 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
                 label: widget.kind == 'recipe' ? 'BLENDED' : 'CLAIMED',
               ),
             ),
+            if (widget.kind == 'recipe')
+              Padding(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 9, AppSpacing.lg, 0),
+                child: _RecipeTargets(
+                  recipe: engine as Recipe,
+                  colorOf: colorOf,
+                ),
+              ),
             const SizedBox(height: AppSpacing.lg),
             Expanded(
               child: Center(
@@ -342,6 +350,112 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
       _initGame();
     });
     if (widget.mode == 'ai' && engine.turn == 1) _aiTurn();
+  }
+}
+
+/// Recipe's one Flutter-port gap found during triage: decant.html shows
+/// each player their secret 4-colour formula so they know what to build —
+/// without it the mode is mechanically playable but illegible. Mine is
+/// shown in full (colour revealed, dims until each position is blended);
+/// theirs shows only how many they've filled, never which colours, so the
+/// race stays a little blind — port of decant.html's `recipeTargetsHTML`.
+class _RecipeTargets extends StatelessWidget {
+  final Recipe recipe;
+  final Color Function(int) colorOf;
+
+  const _RecipeTargets({required this.recipe, required this.colorOf});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _FormulaRow(
+          label: 'YOUR FORMULA',
+          labelColor: AppColors.p1,
+          recipe: recipe.recipes[0],
+          filled: recipe.scores[0],
+          reveal: true,
+          colorOf: colorOf,
+        ),
+        const SizedBox(height: 5),
+        _FormulaRow(
+          label: 'THEIR PROGRESS',
+          labelColor: AppColors.p2,
+          recipe: recipe.recipes[1],
+          filled: recipe.scores[1],
+          reveal: false,
+          colorOf: colorOf,
+        ),
+      ],
+    );
+  }
+}
+
+class _FormulaRow extends StatelessWidget {
+  final String label;
+  final Color labelColor;
+  final List<int> recipe;
+  final int filled;
+  final bool reveal;
+  final Color Function(int) colorOf;
+
+  const _FormulaRow({
+    required this.label,
+    required this.labelColor,
+    required this.recipe,
+    required this.filled,
+    required this.reveal,
+    required this.colorOf,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 100,
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 8.5, letterSpacing: 0.7, fontWeight: FontWeight.w800, color: labelColor),
+          ),
+        ),
+        for (var i = 0; i < recipe.length; i++) ...[
+          if (i > 0) const SizedBox(width: 6),
+          _FormulaChip(on: i < filled, color: reveal ? colorOf(recipe[i]) : null),
+        ],
+      ],
+    );
+  }
+}
+
+class _FormulaChip extends StatelessWidget {
+  final bool on;
+  final Color? color; // non-null = "mine" (colour revealed); null = "theirs" (progress only)
+
+  const _FormulaChip({required this.on, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    if (color != null) {
+      return Container(
+        width: 13,
+        height: 13,
+        decoration: BoxDecoration(
+          color: color!.withValues(alpha: on ? 1.0 : 0.35),
+          borderRadius: BorderRadius.circular(4),
+        ),
+      );
+    }
+    return Container(
+      width: 13,
+      height: 13,
+      decoration: BoxDecoration(
+        color: on ? AppColors.mute : Colors.transparent,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: on ? AppColors.mute : AppColors.edge, width: 1.5),
+      ),
+    );
   }
 }
 
