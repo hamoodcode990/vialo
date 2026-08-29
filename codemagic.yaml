@@ -1,0 +1,106 @@
+# Codemagic CI config for Vialo — reuses the game61 project's Codemagic
+# account, Apple Developer account, and signing pipeline (see CLAUDE.md's
+# "Shipping" section and flutter_port_plan.md Phase 6).
+#
+# This repo is a monorepo: the Flutter project lives in the `app/`
+# subdirectory (alongside decant.html, the docs, and the legacy
+# ios/Decant SwiftUI wrapper at the repo root), not at the repo root
+# itself. Codemagic only ever reads codemagic.yaml from the repo root,
+# so this file has to live here — every script below explicitly `cd
+# app` first so `flutter`/`xcode-project` resolve pubspec.yaml and the
+# Xcode project correctly. (This file used to sit at app/codemagic.yaml
+# under the assumption the Flutter project would be its own repo; once
+# it ended up nested inside this monorepo instead, Codemagic's "No
+# Flutter projects found" was actually a symptom of a second bug — `app`
+# had briefly been committed as a broken submodule gitlink rather than
+# real tracked files, because a nested app/.git existed at commit time.
+# Both are fixed as of this commit: app/.git is gone, app/'s files are
+# tracked normally, and this file is the one Codemagic will find.)
+#
+# One workflow, manual-trigger only (no `triggering:` block — Codemagic
+# only auto-runs a workflow if one is defined, so omitting it means every
+# build here starts by hand from the Codemagic dashboard or API, never on
+# push/PR): builds a signed .ipa and publishes it to TestFlight.
+#
+# Code signing is automatic via an App Store Connect API key integration
+# (Team settings > Integrations > App Store Connect) — Codemagic fetches
+# and manages the distribution certificate and provisioning profile itself
+# from that key, no certificate files checked in anywhere.
+# `xcode-project use-profiles` (before the build step) reuses whatever
+# integration is named under `integrations:` below, writing the fetched
+# profiles to /Users/builder/export_options.plist, which `flutter build
+# ipa` then reads via `--export-options-plist` to sign and export the .ipa.
+#
+# `integrations.app_store_connect` below is set to `game61key` — game61's
+# existing integration — on the assumption that an App Store Connect API
+# key is scoped to the whole Apple Developer team, not one app, so the
+# same integration can sign Vialo's own bundle ID
+# (com.sablastudio.vialo) too. If Codemagic is set up with a
+# Vialo-specific integration instead, rename this to match its name in
+# the dashboard (Team settings > Integrations > App Store Connect).
+#
+# `--build-number=$PROJECT_BUILD_NUMBER` uses Codemagic's own
+# auto-incrementing per-app counter, so every build gets a unique, rising
+# build number with no manual bumping and no collisions against whatever's
+# already on App Store Connect.
+#
+# TestFlight upload is a plain script step (`app-store-connect publish
+# --testflight --verbose`), deliberately not this workflow's
+# `publishing:` key (there isn't one right now) — the CLI is preinstalled
+# on Codemagic's Mac instances and automatically picks up the same
+# integration credentials named above, but a script step's output shows
+# up verbatim in the build log, whereas `publishing.app_store_connect`
+# can swallow Apple's actual rejection reason on failure (this bit game61
+# once — see its codemagic.yaml). If this needs to distribute outside
+# TestFlight later (a full App Store release), that's what `publishing:`
+# is for — add it back then.
+#
+# Unlike game61, Vialo has no server-side secret to inject at build time
+# (no online/multiplayer backend — RevenueCat's iOS SDK key and AdMob's ad
+# unit id are both meant to ship embedded in the client binary, not
+# treated as build secrets, so they're just committed directly in
+# app/lib/monetization/monetization_config.dart once real values replace
+# the placeholder there — see that file's TODO).
+#
+# Instance types: Codemagic's free personal-account plan (500 min/month)
+# only covers macOS M2 (mac_mini_m2) — matches game61's config.
+
+workflows:
+  ios-app-store:
+    name: iOS - App Store (TestFlight)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: game61key
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      vars:
+        BUNDLE_ID: "com.sablastudio.vialo"
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.sablastudio.vialo
+    scripts:
+      - name: Get Flutter packages
+        script: cd app && flutter pub get
+      - name: Flutter analyze
+        script: cd app && flutter analyze
+      - name: Flutter tests (engine + widget/screen tests)
+        script: cd app && flutter test
+      - name: Fetch signing certificate and provisioning profile
+        script: cd app && xcode-project use-profiles
+      - name: Flutter build ipa for App Store distribution
+        script: |
+          cd app && flutter build ipa --release \
+            --build-number=$PROJECT_BUILD_NUMBER \
+            --export-options-plist=/Users/builder/export_options.plist
+      - name: Publish to TestFlight (verbose)
+        script: |
+          app-store-connect publish \
+            --path app/build/ios/ipa/*.ipa \
+            --testflight \
+            --verbose
+    artifacts:
+      - app/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
