@@ -11,7 +11,23 @@ import '../theme/spacing.dart';
 import '../theme/tube_palettes.dart';
 import '../widgets/fuse_cell_view.dart';
 import '../widgets/game_result_panel.dart';
+import '../widgets/gem_painter.dart';
 import 'duel_tube_game_screen.dart' show kBotBonus;
+
+const double _kFuseCellSpacing = 7;
+const double _kFuseGridPad = AppSpacing.md;
+
+/// A merge in flight: the loser gem (at [from]) visibly slides into the
+/// winner's cell (at [to]) before the engine move actually commits, so a
+/// fusion reads as one gem giving itself up into the other rather than an
+/// instant value swap. Step 2/5 of the Vialo UI/content batch.
+class _FlyingGem {
+  final int from;
+  final int to;
+  final int value;
+  final Color color;
+  const _FlyingGem({required this.from, required this.to, required this.value, required this.color});
+}
 
 class FuseGameScreen extends ConsumerStatefulWidget {
   final String mode; // ai | pass
@@ -24,7 +40,7 @@ class FuseGameScreen extends ConsumerStatefulWidget {
   ConsumerState<FuseGameScreen> createState() => _FuseGameScreenState();
 }
 
-class _FuseGameScreenState extends ConsumerState<FuseGameScreen> {
+class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTickerProviderStateMixin {
   late Fuse engine;
   late String effectiveAiKey;
   int? selected;
@@ -33,6 +49,8 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> {
   bool thinking = false;
   bool finished = false;
   ({bool won, int? stars, int? coins})? levelResult;
+  late final AnimationController _flyCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 230));
+  _FlyingGem? _flying;
 
   @override
   void initState() {
@@ -87,15 +105,61 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> {
     });
   }
 
-  void _performMove(int a, int b) {
-    engine.act(a, b);
+  Color _colorOf(int i) => tubePaletteById(ref.read(profileProvider).paletteId)[i];
+
+  void _performMove(int a, int b) async {
+    setState(() {
+      _flying = _FlyingGem(from: a, to: b, value: engine.grid[a], color: _colorOf(engine.grid[a] - 1));
+    });
+    await _flyCtrl.forward(from: 0);
     if (!mounted) return;
-    setState(() {});
+    engine.act(a, b);
+    setState(() => _flying = null);
     if (engine.over) {
       _finish();
       return;
     }
     if (widget.mode == 'ai' && engine.turn == 1) _aiTurn();
+  }
+
+  @override
+  void dispose() {
+    _flyCtrl.dispose();
+    super.dispose();
+  }
+
+  Offset _cellOrigin(int index, double cw) {
+    final row = index ~/ engine.w, col = index % engine.w;
+    return Offset(
+      _kFuseGridPad + col * (cw + _kFuseCellSpacing),
+      _kFuseGridPad + row * (cw + _kFuseCellSpacing),
+    );
+  }
+
+  Widget _buildFlyingGem(_FlyingGem f, double cw) {
+    final start = _cellOrigin(f.from, cw);
+    final end = _cellOrigin(f.to, cw);
+    return AnimatedBuilder(
+      animation: _flyCtrl,
+      builder: (context, child) {
+        final t = Curves.easeInCubic.transform(_flyCtrl.value);
+        final arc = -cw * 0.4 * math.sin(t * math.pi); // brief hop over the board, not a straight slide
+        final pos = Offset(start.dx + (end.dx - start.dx) * t, start.dy + (end.dy - start.dy) * t + arc);
+        final scale = 1.0 - 0.18 * t; // gives itself up into the target on arrival
+        return Positioned(
+          left: pos.dx,
+          top: pos.dy,
+          width: cw,
+          height: cw,
+          child: IgnorePointer(
+            child: Transform.scale(
+              scale: scale,
+              child: Center(child: GemGlyph(size: cw * 0.86, value: f.value, color: f.color)),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _aiTurn() async {
@@ -186,19 +250,23 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> {
                   builder: (context, constraints) {
                     final avail = constraints.maxWidth.clamp(0, 540) - 40 - (engine.w - 1) * 6;
                     final cw = (avail / engine.w).floorToDouble().clamp(38.0, 56.0);
-                    return GridView.count(
+                    return Stack(
+                      alignment: Alignment.topLeft,
+                      clipBehavior: Clip.none,
+                      children: [
+                        GridView.count(
                       shrinkWrap: true,
                       crossAxisCount: engine.w,
-                      mainAxisSpacing: 7,
-                      crossAxisSpacing: 7,
+                      mainAxisSpacing: _kFuseCellSpacing,
+                      crossAxisSpacing: _kFuseCellSpacing,
                       childAspectRatio: 1,
-                      padding: const EdgeInsets.all(AppSpacing.md),
+                      padding: const EdgeInsets.all(_kFuseGridPad),
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
                         for (var i = 0; i < engine.grid.length; i++)
                           FuseCellView(
                             size: cw,
-                            value: engine.grid[i],
+                            value: i == _flying?.from ? 0 : engine.grid[i],
                             sealed: engine.sealed[i],
                             owner: engine.owner[i],
                             colorOf: colorOf,
@@ -208,6 +276,9 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> {
                             shakeTrigger: shakeCell == i ? shakeTrigger : 0,
                             onTap: () => _tap(i),
                           ),
+                      ],
+                        ),
+                        if (_flying != null) _buildFlyingGem(_flying!, cw),
                       ],
                     );
                   },

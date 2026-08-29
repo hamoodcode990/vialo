@@ -1,13 +1,13 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
-import 'tube_painter.dart' show shade;
+import 'gem_painter.dart';
 
-/// One Fuse grid cell: an "essence droplet" that grows with the tile value,
-/// a small numeral, and a crown once claimed. Port of decant.html's `.cell`
-/// / `.ess` / `.essN` / `.crown`.
+/// One Fuse grid cell: a gem that reads through size/gloss/facets first and
+/// a small secondary numeral second (see gem_painter.dart), plus the
+/// claimed-cell owner-coloured border. Re-skin of decant.html's `.cell` /
+/// `.ess` / `.essN` / `.crown` — the claim border treatment is unchanged
+/// from CLAUDE.md's spec, only the base tile's look was replaced.
 class FuseCellView extends StatefulWidget {
   final double size;
   final int value; // 0 = empty
@@ -65,7 +65,6 @@ class _FuseCellViewState extends State<FuseCellView> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final empty = widget.value == 0;
-    final dropSize = empty ? 0.0 : widget.size * (0.34 + 0.15 * (widget.value - 1));
     final color = empty ? null : widget.colorOf(widget.value - 1);
 
     Color borderColor;
@@ -114,36 +113,24 @@ class _FuseCellViewState extends State<FuseCellView> with TickerProviderStateMix
                 if (!empty)
                   ScaleTransition(
                     scale: _growCtrl,
-                    child: Transform.rotate(
-                      angle: math.pi / 4,
-                      child: Container(
-                        width: dropSize,
-                        height: dropSize,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(dropSize / 2),
-                            topRight: Radius.circular(dropSize / 2),
-                            bottomRight: Radius.circular(dropSize / 2),
-                          ),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [color!, shade(color, -30)],
-                          ),
-                        ),
-                      ),
-                    ),
+                    child: GemGlyph(size: widget.size * 0.86, value: widget.value, color: color!),
                   ),
                 if (!empty)
                   Positioned(
-                    bottom: 4,
-                    right: 6,
-                    child: Text(
-                      '${widget.value}',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.mute,
+                    bottom: 3,
+                    right: 4,
+                    child: Container(
+                      width: 15,
+                      height: 15,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppColors.ink2,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.edge),
+                      ),
+                      child: Text(
+                        '${widget.value}',
+                        style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.mute, height: 1),
                       ),
                     ),
                   ),
