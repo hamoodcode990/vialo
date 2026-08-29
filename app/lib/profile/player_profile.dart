@@ -48,7 +48,7 @@ class PlayerProfile {
 
   PlayerProfile({
     this.name = 'Player',
-    this.avatarId = 'a1',
+    this.avatarId = 'drop_blue',
     this.lives = lifeMax,
     int? livesUpdatedAt,
     this.coins = 100,
@@ -198,7 +198,7 @@ class PlayerProfile {
 
   factory PlayerProfile.fromJson(Map<String, dynamic> json) => PlayerProfile(
         name: json['name'] as String? ?? 'Player',
-        avatarId: json['avatarId'] as String? ?? 'a1',
+        avatarId: json['avatarId'] as String? ?? 'drop_blue',
         lives: json['lives'] as int? ?? lifeMax,
         livesUpdatedAt: json['livesUpdatedAt'] as int?,
         coins: json['coins'] as int? ?? 100,

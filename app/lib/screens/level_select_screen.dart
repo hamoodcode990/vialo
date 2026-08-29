@@ -44,7 +44,7 @@ class LevelSelectScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               HeaderBar(
-                avatarEmoji: avatar.emoji,
+                avatar: avatar,
                 lives: profile.lives,
                 lifeMax: 5,
                 coins: profile.coins,

@@ -70,7 +70,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               HeaderBar(
-                avatarEmoji: avatar.emoji,
+                avatar: avatar,
                 lives: profile.lives,
                 lifeMax: PlayerProfile.lifeMax,
                 countdownText: countdown,

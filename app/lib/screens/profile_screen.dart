@@ -70,7 +70,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         border: Border.all(color: profile.avatarId == a.id ? AppColors.violet : AppColors.edge, width: profile.avatarId == a.id ? 2 : 1),
                       ),
                       alignment: Alignment.center,
-                      child: Text(a.emoji, style: const TextStyle(fontSize: 26)),
+                      child: AvatarGlyph(avatar: a, size: 44, ring: false),
                     ),
                   ),
               ],

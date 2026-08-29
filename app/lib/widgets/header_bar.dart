@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/cosmetics.dart';
 import '../theme/spacing.dart';
 
 /// Avatar · lives (with countdown) · coins — shown on every non-gameplay
 /// screen. Port of decant.html's `headerBar()`.
 class HeaderBar extends StatelessWidget {
-  final String avatarEmoji;
+  final AvatarOption avatar;
   final int lives;
   final int lifeMax;
   final String? countdownText;
@@ -17,7 +18,7 @@ class HeaderBar extends StatelessWidget {
 
   const HeaderBar({
     super.key,
-    required this.avatarEmoji,
+    required this.avatar,
     required this.lives,
     required this.lifeMax,
     this.countdownText,
@@ -33,7 +34,7 @@ class HeaderBar extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       child: Row(
         children: [
-          _AvatarButton(emoji: avatarEmoji, onTap: onAvatarTap),
+          GestureDetector(onTap: onAvatarTap, child: AvatarGlyph(avatar: avatar)),
           const Spacer(),
           _Pill(
             color: AppColors.life,
@@ -68,35 +69,6 @@ class HeaderBar extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _AvatarButton extends StatelessWidget {
-  final String emoji;
-  final VoidCallback? onTap;
-  const _AvatarButton({required this.emoji, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.violet, AppColors.violetd],
-          ),
-          boxShadow: [BoxShadow(color: AppColors.txt.withValues(alpha: 0.12), blurRadius: 10, offset: const Offset(0, 3))],
-        ),
-        child: Text(emoji, style: const TextStyle(fontSize: 18)),
       ),
     );
   }
