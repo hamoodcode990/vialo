@@ -41,7 +41,6 @@ class PlayerProfile {
 
   bool muted; // sound effects
   bool musicMuted; // independent of `muted`, per CLAUDE.md Step 9
-  int bestOf; // 3 or 5, Quick Match match length
 
   /// Whether the first-launch onboarding overlay (CLAUDE.md Step 6) has
   /// been shown/skipped. Once true, it never shows again for this player.
@@ -74,7 +73,6 @@ class PlayerProfile {
     this.backgroundId = 'bg1',
     this.muted = false,
     this.musicMuted = false,
-    this.bestOf = 3,
     this.onboarded = false,
     this.appleUserId,
     DuelStats? stats,
@@ -235,7 +233,6 @@ class PlayerProfile {
         backgroundId: json['backgroundId'] as String? ?? 'bg1',
         muted: json['muted'] as bool? ?? false,
         musicMuted: json['musicMuted'] as bool? ?? false,
-        bestOf: json['bestOf'] as int? ?? 3,
         onboarded: json['onboarded'] as bool? ?? false,
         appleUserId: json['appleUserId'] as String?,
         stats: json['stats'] != null
@@ -265,7 +262,6 @@ class PlayerProfile {
         'backgroundId': backgroundId,
         'muted': muted,
         'musicMuted': musicMuted,
-        'bestOf': bestOf,
         'onboarded': onboarded,
         'appleUserId': appleUserId,
         'stats': stats.toJson(),

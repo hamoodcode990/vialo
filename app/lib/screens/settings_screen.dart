@@ -8,11 +8,10 @@ import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 
-/// Sound, match length, and restore-purchases. Port of decant.html's mute
-/// toggle + best-of picker (scattered there; consolidated here as its own
-/// screen per flutter_port_plan.md's Phase 4 screen list). Sound effects
-/// and music are independent toggles (CLAUDE.md Step 9) rather than the
-/// single combined switch the HTML prototype had.
+/// Sound and restore-purchases. Port of decant.html's mute toggle
+/// (consolidated here as its own screen per flutter_port_plan.md's Phase 4
+/// screen list). Sound effects and music are independent toggles (CLAUDE.md
+/// Step 9) rather than the single combined switch the HTML prototype had.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -49,16 +48,6 @@ class SettingsScreen extends ConsumerWidget {
                       audio.refreshMusicMuteState();
                     },
                   ),
-                ],
-              ),
-            ),
-            const _Label('QUICK MATCH LENGTH'),
-            _Card(
-              child: Row(
-                children: [
-                  Expanded(child: _SegButton(label: 'Best of 3', selected: profile.bestOf == 3, onTap: () => ctrl.setBestOf(3))),
-                  const SizedBox(width: 8),
-                  Expanded(child: _SegButton(label: 'Best of 5', selected: profile.bestOf == 5, onTap: () => ctrl.setBestOf(5))),
                 ],
               ),
             ),
@@ -105,33 +94,12 @@ class _Card extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 6),
-      decoration: BoxDecoration(color: AppColors.ink2, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: AppColors.edge)),
-      child: Material(type: MaterialType.transparency, child: child),
-    );
-  }
-}
-
-class _SegButton extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  const _SegButton({required this.label, required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? AppColors.p1.withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(color: selected ? AppColors.p1.withValues(alpha: 0.4) : AppColors.edge),
-        ),
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(label, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: selected ? AppColors.p1 : AppColors.txt)),
+      decoration: BoxDecoration(
+        color: AppColors.ink2,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.outline, width: 3),
       ),
+      child: Material(type: MaterialType.transparency, child: child),
     );
   }
 }

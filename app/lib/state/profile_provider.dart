@@ -138,12 +138,6 @@ class ProfileController extends AsyncNotifier<PlayerProfile> {
     _commit(p.clone());
   }
 
-  void setBestOf(int n) {
-    final p = _current;
-    p.bestOf = n;
-    _commit(p.clone());
-  }
-
   void completeOnboarding() {
     final p = _current;
     if (p.onboarded) return;
