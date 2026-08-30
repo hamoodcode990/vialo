@@ -31,13 +31,13 @@ class _AppButtonState extends State<AppButton> {
   ({Color bg, Color fg, Gradient? gradient, Border? border}) _colors() {
     switch (widget.style) {
       case AppButtonStyle.primary:
-        return (bg: AppColors.p1, fg: Colors.white, gradient: const LinearGradient(colors: [AppColors.p1, AppColors.p1d], begin: Alignment.topLeft, end: Alignment.bottomRight), border: null);
+        return (bg: AppColors.p1, fg: Colors.white, gradient: const LinearGradient(colors: [AppColors.p1, AppColors.p1d], begin: Alignment.topLeft, end: Alignment.bottomRight), border: Border.all(color: AppColors.outline, width: 3));
       case AppButtonStyle.gold:
-        return (bg: AppColors.gold, fg: Colors.white, gradient: const LinearGradient(colors: [AppColors.gold, AppColors.goldd], begin: Alignment.topLeft, end: Alignment.bottomRight), border: null);
+        return (bg: AppColors.gold, fg: Colors.white, gradient: const LinearGradient(colors: [AppColors.gold, AppColors.goldd], begin: Alignment.topLeft, end: Alignment.bottomRight), border: Border.all(color: AppColors.outline, width: 3));
       case AppButtonStyle.violet:
-        return (bg: AppColors.violet, fg: Colors.white, gradient: const LinearGradient(colors: [AppColors.violet, AppColors.violetd], begin: Alignment.topLeft, end: Alignment.bottomRight), border: null);
+        return (bg: AppColors.violet, fg: Colors.white, gradient: const LinearGradient(colors: [AppColors.violet, AppColors.violetd], begin: Alignment.topLeft, end: Alignment.bottomRight), border: Border.all(color: AppColors.outline, width: 3));
       case AppButtonStyle.secondary:
-        return (bg: AppColors.ink2, fg: AppColors.mute, gradient: null, border: Border.all(color: AppColors.edge));
+        return (bg: AppColors.ink2, fg: AppColors.mute, gradient: null, border: Border.all(color: AppColors.outline, width: 3));
       case AppButtonStyle.ghost:
         return (bg: Colors.transparent, fg: AppColors.mute, gradient: null, border: null);
     }

@@ -41,12 +41,12 @@ class _AppCardState extends State<AppCard> {
           margin: const EdgeInsets.only(bottom: AppSpacing.md),
           decoration: BoxDecoration(
             color: AppColors.ink2,
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            border: Border.all(color: AppColors.edge),
+            borderRadius: BorderRadius.circular(AppRadius.xxl),
+            border: Border.all(color: AppColors.outline, width: 3),
             boxShadow: [BoxShadow(color: AppColors.txt.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 6))],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.xl),
+            borderRadius: BorderRadius.circular(AppRadius.xxl),
             child: IntrinsicHeight(
               child: Row(
                 children: [

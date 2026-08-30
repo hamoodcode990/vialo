@@ -68,17 +68,15 @@ class _FuseCellViewState extends State<FuseCellView> with TickerProviderStateMix
     final color = empty ? null : widget.colorOf(widget.value - 1);
 
     Color borderColor;
-    double borderWidth = 1;
+    double borderWidth = 2.5;
     if (widget.sealed) {
       borderColor = widget.owner == 0 ? AppColors.p1 : AppColors.p2;
     } else if (widget.selected) {
       borderColor = AppColors.p1;
-      borderWidth = 2.5;
     } else if (widget.isTarget) {
       borderColor = AppColors.p1;
-      borderWidth = 2;
     } else {
-      borderColor = AppColors.edge;
+      borderColor = AppColors.outline;
     }
 
     return GestureDetector(

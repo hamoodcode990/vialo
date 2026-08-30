@@ -20,9 +20,13 @@ ThemeData buildAppTheme() {
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
-    scaffoldBackgroundColor: AppColors.ink,
+    // Transparent so every Scaffold shows the shared AnimatedAppBackground
+    // mounted at the MaterialApp root instead of a flat colour.
+    scaffoldBackgroundColor: Colors.transparent,
     canvasColor: AppColors.ink,
-    fontFamily: null, // platform default (SF Pro on iOS), matches the HTML's system-font stack
+    // Fredoka: rounded, heavy-weight display font for the candy-puzzle look
+    // (CLAUDE.md Step 3) — bundled OFL asset, see assets/fonts/.
+    fontFamily: 'Fredoka',
     textTheme: const TextTheme(
       displayLarge: TextStyle(
         fontSize: 38,
@@ -66,8 +70,8 @@ ThemeData buildAppTheme() {
       color: AppColors.ink2,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        side: const BorderSide(color: AppColors.edge),
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+        side: const BorderSide(color: AppColors.outline, width: 3),
       ),
     ),
     splashFactory: NoSplash.splashFactory,

@@ -69,17 +69,15 @@ class _TubeViewState extends State<TubeView> with SingleTickerProviderStateMixin
     final segments = mergeSegments(widget.contents, widget.colorOf);
 
     Color borderColor;
-    double borderWidth = 1.5;
+    double borderWidth = 3;
     if (widget.sealed) {
       borderColor = AppColors.gold;
     } else if (widget.selected) {
       borderColor = AppColors.p1;
-      borderWidth = 2.5;
     } else if (widget.isTarget) {
       borderColor = AppColors.p1;
-      borderWidth = 2;
     } else {
-      borderColor = Colors.white.withValues(alpha: 0.65);
+      borderColor = AppColors.outline;
     }
 
     Widget glass = CustomPaint(

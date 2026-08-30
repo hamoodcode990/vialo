@@ -89,7 +89,7 @@ class _Pill extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.ink2,
           borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(color: AppColors.edge),
+          border: Border.all(color: AppColors.outline, width: 2.5),
           boxShadow: [BoxShadow(color: AppColors.txt.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 2))],
         ),
         child: child,

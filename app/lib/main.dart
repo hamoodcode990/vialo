@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'monetization/monetization_controller.dart';
 import 'screens/home_screen.dart';
+import 'screens/intro_screen.dart';
 import 'state/profile_provider.dart';
-import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
+import 'widgets/animated_app_background.dart';
 
 void main() {
   runApp(const ProviderScope(child: VialoApp()));
@@ -37,41 +38,48 @@ class _VialoAppState extends ConsumerState<VialoApp> {
       title: 'Vialo',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
+      // Mounted once here rather than per-screen so every Scaffold (which is
+      // transparent, see buildAppTheme) shows the same drifting backdrop.
+      builder: (context, child) => AnimatedAppBackground(child: child!),
       home: const _AppGate(),
     );
   }
 }
 
-/// Waits for the first profile load (a single shared_preferences read)
-/// before showing the app, so no screen ever has to handle "profile not
-/// loaded yet" — see ProfileController.build().
-class _AppGate extends ConsumerWidget {
+/// Cold-launch gate: always shows the [IntroScreen] reveal (Step 4) for its
+/// fixed ~1.8s, then the home screen — or, on the rare case the profile's
+/// single shared_preferences read is still pending once the reveal
+/// finishes, keeps the intro's rest frame up with a small spinner rather
+/// than a blank frame, per CLAUDE.md Step 4's "never a blank frame" rule.
+/// No screen past this gate ever has to handle "profile not loaded yet" —
+/// see ProfileController.build().
+class _AppGate extends ConsumerStatefulWidget {
   const _AppGate();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AppGate> createState() => _AppGateState();
+}
+
+class _AppGateState extends ConsumerState<_AppGate> {
+  bool _introDone = false;
+
+  @override
+  Widget build(BuildContext context) {
     final profileAsync = ref.watch(profileControllerProvider);
+    final profileReady = profileAsync is! AsyncLoading;
+
+    if (!_introDone) {
+      return IntroScreen(
+        onDone: () => setState(() => _introDone = true),
+        showLoadingSpinner: !profileReady,
+      );
+    }
     return profileAsync.when(
       data: (_) => const HomeScreen(),
-      loading: () => const _Splash(),
+      loading: () => const IntroScreen(onDone: _noop, showLoadingSpinner: true, animate: false),
       error: (err, st) => const HomeScreen(), // ProfileRepository.load() already falls back to defaults
     );
   }
 }
 
-class _Splash extends StatelessWidget {
-  const _Splash();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: AppColors.ink,
-      body: Center(
-        child: Text(
-          'VIALO',
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -1, color: AppColors.txt),
-        ),
-      ),
-    );
-  }
-}
+void _noop() {}

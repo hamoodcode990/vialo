@@ -12,6 +12,11 @@ class AppColors {
   static const txt = Color(0xFF1C1B24);
   static const mute = Color(0xFF83809A);
 
+  /// Bold, dark "ink line" outline used on buttons/cards/tiles/tubes for the
+  /// candy-puzzle "juicy" read (CLAUDE.md Step 3) — not the same as [edge],
+  /// which stays a near-invisible hairline for secondary chrome.
+  static const outline = Color(0xFF241A38);
+
   static const p1 = Color(0xFF00C389); // emerald — player 1 / success
   static const p1d = Color(0xFF009A6C);
   static const p2 = Color(0xFFFF4D74); // rose — player 2 / life
