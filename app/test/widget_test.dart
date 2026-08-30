@@ -10,7 +10,13 @@ void main() {
   testWidgets('VialoApp boots to the home screen', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const ProviderScope(child: VialoApp()));
-    await tester.pumpAndSettle();
+    // pumpAndSettle can't be used once the app has a perpetually-repeating
+    // animation (the animated gradient backdrop) — it would wait forever
+    // for zero pending frames. Bounded pumps instead: one to flush the
+    // profile-load future, one to ride out the ~1.8s intro reveal (Step 4)
+    // plus any transition animation.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 2000));
 
     expect(find.text('VIALO'), findsOneWidget);
     expect(find.text('Split'), findsOneWidget);
@@ -26,10 +32,17 @@ void main() {
   testWidgets('tapping a mode tile opens its hub', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const ProviderScope(child: VialoApp()));
-    await tester.pumpAndSettle();
+    // pumpAndSettle can't be used once the app has a perpetually-repeating
+    // animation (the animated gradient backdrop) — it would wait forever
+    // for zero pending frames. Bounded pumps instead: one to flush the
+    // profile-load future, one to ride out the ~1.8s intro reveal (Step 4)
+    // plus any transition animation.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 2000));
 
     await tester.tap(find.text('Pour').first);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('Levels'), findsOneWidget);
     expect(find.text('Quick match'), findsOneWidget);
