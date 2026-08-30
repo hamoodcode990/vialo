@@ -12,10 +12,10 @@ import '../widgets/app_card.dart';
 import '../widgets/header_bar.dart';
 import 'daily_challenge_screen.dart';
 import 'game_screen_router.dart';
-import 'level_select_screen.dart';
 import 'mode_hub_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
+import 'solo_level_map_screen.dart';
 import 'stats_screen.dart';
 import 'store_screen.dart';
 
@@ -140,7 +140,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
               for (final mode in kDuelModes) _ModeTile(mode: mode),
               AppCard(
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const LevelSelectScreen(mode: 'solo')),
+                  MaterialPageRoute(builder: (_) => const SoloLevelMapScreen()),
                 ),
                 child: Row(
                   children: [

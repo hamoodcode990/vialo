@@ -2,6 +2,7 @@
 // and lands on the home screen with the header bar and all four duel-mode
 // tiles visible.
 import 'package:vialo/main.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -69,5 +70,36 @@ void main() {
 
     expect(find.text('VIALO'), findsOneWidget);
     expect(find.text('Split'), findsOneWidget);
+  });
+
+  testWidgets("Solo's level map shows chapter framing and blocks a locked level", (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({'vialo_profile_v1': '{"onboarded":true}'});
+    await tester.pumpWidget(const ProviderScope(child: VialoApp()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 2000));
+
+    // "Solo sort" sits below the fold on the test surface — scroll it into view.
+    await tester.drag(find.text('VIALO'), const Offset(0, -400));
+    await tester.pump();
+    await tester.tap(find.text('Solo sort'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Chapter 1's title card (CLAUDE.md Step 10).
+    expect(find.text('CHAPTER 1'), findsOneWidget);
+    expect(find.text('The First Pours'), findsOneWidget);
+    // Level 1 is unlocked on a fresh profile.
+    expect(find.text('1'), findsOneWidget);
+
+    // Level 2 is locked (shows a lock icon, not its number) and sits
+    // further down the winding path — scroll it into view.
+    await tester.drag(find.text('CHAPTER 1'), const Offset(0, -200));
+    await tester.pump();
+    expect(find.byIcon(Icons.lock_rounded), findsWidgets);
+
+    await tester.tap(find.byIcon(Icons.lock_rounded).first);
+    await tester.pump();
+
+    expect(find.text('Locked — clear the level before it first'), findsWidgets);
   });
 }
