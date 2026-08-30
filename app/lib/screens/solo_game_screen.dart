@@ -378,6 +378,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
                               for (var i = 0; i < board.tubes.length; i++)
                                 TubeView(
                                   key: _tubeKeys[i],
+                                  index: i,
                                   width: w,
                                   capacity: kCap,
                                   contents: board.tubes[i],

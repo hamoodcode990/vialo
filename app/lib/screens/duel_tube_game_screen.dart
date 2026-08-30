@@ -383,6 +383,7 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
                               for (var i = 0; i < engine.tubes.length; i++)
                                 TubeView(
                                   key: _tubeKeys[i],
+                                  index: i,
                                   width: w,
                                   capacity: kCap,
                                   contents: engine.tubes[i],

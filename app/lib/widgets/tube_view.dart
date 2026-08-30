@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import 'entrance_reveal.dart';
 import 'tube_painter.dart';
 
 /// One glass tube: selection lift, legal-target ring, dimmed/sealed states,
@@ -18,6 +19,11 @@ class TubeView extends StatefulWidget {
   final String? capLabel;
   final Color? capColor;
 
+  /// This tube's position in the row — staggers its one-time entrance pop-in
+  /// (EntranceReveal) so the whole board doesn't materialize in a single
+  /// frame. Purely cosmetic/perf, no effect on gameplay.
+  final int index;
+
   /// Bump this to trigger a shake (e.g. on an illegal tap).
   final int shakeTrigger;
   final VoidCallback? onTap;
@@ -34,6 +40,7 @@ class TubeView extends StatefulWidget {
     this.dimmed = false,
     this.capLabel,
     this.capColor,
+    this.index = 0,
     this.shakeTrigger = 0,
     this.onTap,
   });
@@ -177,42 +184,45 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
       ),
     );
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: AnimatedOpacity(
-        opacity: widget.dimmed ? 0.34 : 1.0,
-        duration: const Duration(milliseconds: 180),
-        child: AnimatedBuilder(
-          animation: _shakeCtrl,
-          builder: (context, child) {
-            final t = _shakeCtrl.value;
-            final dx = t == 0 || t == 1
-                ? 0.0
-                : (7 * (1 - t)) * ((t * 4).floor().isEven ? 1 : -1);
-            return Transform.translate(offset: Offset(dx, 0), child: child);
-          },
-          child: AnimatedSlide(
-            offset: widget.selected ? const Offset(0, -0.14) : Offset.zero,
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutBack,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                glass,
-                const SizedBox(height: 5),
-                SizedBox(
-                  height: 14,
-                  child: Text(
-                    widget.capLabel ?? (widget.sealed ? '●' : ''),
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1,
-                      color: widget.capColor ?? AppColors.mute,
+    return EntranceReveal(
+      delay: Duration(milliseconds: (widget.index * 40).clamp(0, 480)),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedOpacity(
+          opacity: widget.dimmed ? 0.34 : 1.0,
+          duration: const Duration(milliseconds: 180),
+          child: AnimatedBuilder(
+            animation: _shakeCtrl,
+            builder: (context, child) {
+              final t = _shakeCtrl.value;
+              final dx = t == 0 || t == 1
+                  ? 0.0
+                  : (7 * (1 - t)) * ((t * 4).floor().isEven ? 1 : -1);
+              return Transform.translate(offset: Offset(dx, 0), child: child);
+            },
+            child: AnimatedSlide(
+              offset: widget.selected ? const Offset(0, -0.14) : Offset.zero,
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutBack,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  glass,
+                  const SizedBox(height: 5),
+                  SizedBox(
+                    height: 14,
+                    child: Text(
+                      widget.capLabel ?? (widget.sealed ? '●' : ''),
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1,
+                        color: widget.capColor ?? AppColors.mute,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

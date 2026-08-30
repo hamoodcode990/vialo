@@ -27,7 +27,12 @@ class _FlyingGem {
   final int to;
   final int value;
   final Color color;
-  const _FlyingGem({required this.from, required this.to, required this.value, required this.color});
+  const _FlyingGem({
+    required this.from,
+    required this.to,
+    required this.value,
+    required this.color,
+  });
 }
 
 class FuseGameScreen extends ConsumerStatefulWidget {
@@ -35,13 +40,19 @@ class FuseGameScreen extends ConsumerStatefulWidget {
   final String? aiKey;
   final int? levelNumber;
 
-  const FuseGameScreen({super.key, required this.mode, this.aiKey, this.levelNumber});
+  const FuseGameScreen({
+    super.key,
+    required this.mode,
+    this.aiKey,
+    this.levelNumber,
+  });
 
   @override
   ConsumerState<FuseGameScreen> createState() => _FuseGameScreenState();
 }
 
-class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTickerProviderStateMixin {
+class _FuseGameScreenState extends ConsumerState<FuseGameScreen>
+    with SingleTickerProviderStateMixin {
   late Fuse engine;
   late String effectiveAiKey;
   int? selected;
@@ -50,7 +61,10 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
   bool thinking = false;
   bool finished = false;
   ({bool won, int? stars, int? coins})? levelResult;
-  late final AnimationController _flyCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 230));
+  late final AnimationController _flyCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 230),
+  );
   _FlyingGem? _flying;
 
   @override
@@ -65,15 +79,19 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
 
   void _initGame() {
     effectiveAiKey = widget.aiKey ?? 'normal';
-    if (widget.levelNumber != null) effectiveAiKey = fuseLvlCfg(widget.levelNumber!);
+    if (widget.levelNumber != null) {
+      effectiveAiKey = fuseLvlCfg(widget.levelNumber!);
+    }
     final seed = widget.levelNumber != null
         ? modeSeed('fuse', widget.levelNumber!)
-        : (DateTime.now().millisecondsSinceEpoch % 900000) + math.Random().nextInt(999);
+        : (DateTime.now().millisecondsSinceEpoch % 900000) +
+              math.Random().nextInt(999);
     engine = Fuse(seed);
   }
 
-  List<String> get _names =>
-      widget.mode == 'ai' ? ['You', '${kAiProfiles[effectiveAiKey]!.name} bot'] : ['Player 1', 'Player 2'];
+  List<String> get _names => widget.mode == 'ai'
+      ? ['You', '${kAiProfiles[effectiveAiKey]!.name} bot']
+      : ['Player 1', 'Player 2'];
 
   bool get _isLevelRun => widget.levelNumber != null;
 
@@ -82,7 +100,10 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
     if (widget.mode == 'ai' && engine.turn != 0) return;
     if (selected == null) {
       if (engine.grid[i] == 0 || engine.sealed[i]) return;
-      final hasTarget = List.generate(engine.grid.length, (b) => b).any((b) => engine.canAct(i, b));
+      final hasTarget = List.generate(
+        engine.grid.length,
+        (b) => b,
+      ).any((b) => engine.canAct(i, b));
       if (!hasTarget) {
         ref.read(audioControllerProvider).invalidMove();
         setState(() {
@@ -112,11 +133,17 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
     });
   }
 
-  Color _colorOf(int i) => tubePaletteById(ref.read(profileProvider).paletteId)[i];
+  Color _colorOf(int i) =>
+      tubePaletteById(ref.read(profileProvider).paletteId)[i];
 
   void _performMove(int a, int b) async {
     setState(() {
-      _flying = _FlyingGem(from: a, to: b, value: engine.grid[a], color: _colorOf(engine.grid[a] - 1));
+      _flying = _FlyingGem(
+        from: a,
+        to: b,
+        value: engine.grid[a],
+        color: _colorOf(engine.grid[a] - 1),
+      );
     });
     await _flyCtrl.forward(from: 0);
     if (!mounted) return;
@@ -157,9 +184,18 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
       animation: _flyCtrl,
       builder: (context, child) {
         final t = Curves.easeInCubic.transform(_flyCtrl.value);
-        final arc = -cw * 0.4 * math.sin(t * math.pi); // brief hop over the board, not a straight slide
-        final pos = Offset(start.dx + (end.dx - start.dx) * t, start.dy + (end.dy - start.dy) * t + arc);
-        final scale = 1.0 - 0.18 * t; // gives itself up into the target on arrival
+        final arc =
+            -cw *
+            0.4 *
+            math.sin(
+              t * math.pi,
+            ); // brief hop over the board, not a straight slide
+        final pos = Offset(
+          start.dx + (end.dx - start.dx) * t,
+          start.dy + (end.dy - start.dy) * t + arc,
+        );
+        final scale =
+            1.0 - 0.18 * t; // gives itself up into the target on arrival
         return Positioned(
           left: pos.dx,
           top: pos.dy,
@@ -168,7 +204,13 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
           child: IgnorePointer(
             child: Transform.scale(
               scale: scale,
-              child: Center(child: GemGlyph(size: cw * 0.86, value: f.value, color: f.color)),
+              child: Center(
+                child: GemGlyph(
+                  size: cw * 0.86,
+                  value: f.value,
+                  color: f.color,
+                ),
+              ),
             ),
           ),
         );
@@ -178,7 +220,9 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
 
   Future<void> _aiTurn() async {
     setState(() => thinking = true);
-    await Future.delayed(Duration(milliseconds: 380 + math.Random().nextInt(340)));
+    await Future.delayed(
+      Duration(milliseconds: 380 + math.Random().nextInt(340)),
+    );
     if (!mounted) return;
     final profile = kAiProfiles[effectiveAiKey]!;
     final rnd = mb32(DateTime.now().millisecondsSinceEpoch & 0xffff);
@@ -212,7 +256,12 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
 
     if (_isLevelRun) {
       if (won) {
-        final stars = duelStars(kind: 'fuse', myScore: engine.scores[0], oppScore: engine.scores[1], colors: 0);
+        final stars = duelStars(
+          kind: 'fuse',
+          myScore: engine.scores[0],
+          oppScore: engine.scores[1],
+          colors: 0,
+        );
         final result = ctrl.recordLevelWin('fuse', widget.levelNumber!, stars);
         audio.coinGain();
         levelResult = (won: true, stars: stars, coins: result.coinsEarned);
@@ -244,7 +293,13 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
     final names = _names;
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isLevelRun ? '${info.name} · Level ${widget.levelNumber}' : info.name)),
+      appBar: AppBar(
+        title: Text(
+          _isLevelRun
+              ? '${info.name} · Level ${widget.levelNumber}'
+              : info.name,
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -254,12 +309,21 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
                 children: [
                   Opacity(
                     opacity: engine.turn == 0 && !engine.over ? 1 : 0.35,
-                    child: _PlayerScore(name: names[0], score: engine.scores[0], color: AppColors.p1),
+                    child: _PlayerScore(
+                      name: names[0],
+                      score: engine.scores[0],
+                      color: AppColors.p1,
+                    ),
                   ),
                   const Spacer(),
                   Opacity(
                     opacity: engine.turn == 1 && !engine.over ? 1 : 0.35,
-                    child: _PlayerScore(name: names[1], score: engine.scores[1], color: AppColors.p2, alignRight: true),
+                    child: _PlayerScore(
+                      name: names[1],
+                      score: engine.scores[1],
+                      color: AppColors.p2,
+                      alignRight: true,
+                    ),
                   ),
                 ],
               ),
@@ -268,51 +332,99 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
               child: Center(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final avail = constraints.maxWidth.clamp(0, 540) - 40 - (engine.w - 1) * 6;
-                    final cw = (avail / engine.w).floorToDouble().clamp(38.0, 56.0);
-                    return Stack(
-                      alignment: Alignment.topLeft,
-                      clipBehavior: Clip.none,
-                      children: [
-                        GridView.count(
-                      shrinkWrap: true,
-                      crossAxisCount: engine.w,
-                      mainAxisSpacing: _kFuseCellSpacing,
-                      crossAxisSpacing: _kFuseCellSpacing,
-                      childAspectRatio: 1,
-                      padding: const EdgeInsets.all(_kFuseGridPad),
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: [
-                        for (var i = 0; i < engine.grid.length; i++)
-                          FuseCellView(
-                            size: cw,
-                            value: i == _flying?.from ? 0 : engine.grid[i],
-                            sealed: engine.sealed[i],
-                            owner: engine.owner[i],
-                            colorOf: colorOf,
-                            selected: selected == i,
-                            isTarget: selected != null && engine.canAct(selected!, i),
-                            dimmed: selected != null && selected != i && !engine.canAct(selected!, i),
-                            shakeTrigger: shakeCell == i ? shakeTrigger : 0,
-                            onTap: () => _tap(i),
+                    final avail =
+                        constraints.maxWidth.clamp(0, 540) -
+                        40 -
+                        (engine.w - 1) * 6;
+                    final cw = (avail / engine.w).floorToDouble().clamp(
+                      38.0,
+                      56.0,
+                    );
+                    // A framed board panel behind the grid — bold outline +
+                    // a soft glow in the mode's own accent (emerald), same
+                    // language as AppCard, so the grid reads as one "board"
+                    // object rather than tiles floating loose on the
+                    // backdrop. Part of the dark/futuristic theme update.
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.ink2,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: AppColors.outline, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: info.color.withValues(alpha: 0.18),
+                            blurRadius: 30,
+                            spreadRadius: 2,
                           ),
-                      ],
-                        ),
-                        if (_flying != null) _buildFlyingGem(_flying!, cw),
-                      ],
+                        ],
+                      ),
+                      child: Stack(
+                        alignment: Alignment.topLeft,
+                        clipBehavior: Clip.none,
+                        children: [
+                          GridView.count(
+                            shrinkWrap: true,
+                            crossAxisCount: engine.w,
+                            mainAxisSpacing: _kFuseCellSpacing,
+                            crossAxisSpacing: _kFuseCellSpacing,
+                            childAspectRatio: 1,
+                            padding: const EdgeInsets.all(_kFuseGridPad),
+                            physics: const NeverScrollableScrollPhysics(),
+                            children: [
+                              for (var i = 0; i < engine.grid.length; i++)
+                                FuseCellView(
+                                  size: cw,
+                                  value: i == _flying?.from
+                                      ? 0
+                                      : engine.grid[i],
+                                  sealed: engine.sealed[i],
+                                  owner: engine.owner[i],
+                                  colorOf: colorOf,
+                                  selected: selected == i,
+                                  isTarget:
+                                      selected != null &&
+                                      engine.canAct(selected!, i),
+                                  dimmed:
+                                      selected != null &&
+                                      selected != i &&
+                                      !engine.canAct(selected!, i),
+                                  index: i,
+                                  gridWidth: engine.w,
+                                  shakeTrigger: shakeCell == i
+                                      ? shakeTrigger
+                                      : 0,
+                                  onTap: () => _tap(i),
+                                ),
+                            ],
+                          ),
+                          if (_flying != null) _buildFlyingGem(_flying!, cw),
+                        ],
+                      ),
                     );
                   },
                 ),
               ),
             ),
             if (engine.over)
-              Padding(padding: const EdgeInsets.only(bottom: AppSpacing.lg), child: _buildResult(context, names))
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                child: _buildResult(context, names),
+              )
             else
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.xl),
                 child: Text(
-                  thinking ? '${names[1]} is thinking…' : (widget.mode == 'ai' ? 'Your move' : "${names[engine.turn]} — your move"),
-                  style: TextStyle(color: thinking ? AppColors.p2 : (engine.turn == 0 ? AppColors.p1 : AppColors.p2), fontWeight: FontWeight.w600),
+                  thinking
+                      ? '${names[1]} is thinking…'
+                      : (widget.mode == 'ai'
+                            ? 'Your move'
+                            : "${names[engine.turn]} — your move"),
+                  style: TextStyle(
+                    color: thinking
+                        ? AppColors.p2
+                        : (engine.turn == 0 ? AppColors.p1 : AppColors.p2),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
           ],
@@ -328,7 +440,8 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
       return GameResultPanel(
         title: r.won ? 'Level cleared' : 'Level lost',
         color: r.won ? AppColors.p1 : AppColors.hot,
-        subtitle: '${engine.scores[0]} — ${engine.scores[1]} · no fusions left${r.won ? ' · +${r.coins} coins' : ' · −1 life'}',
+        subtitle:
+            '${engine.scores[0]} — ${engine.scores[1]} · no fusions left${r.won ? ' · +${r.coins} coins' : ' · −1 life'}',
         stars: r.won ? r.stars : null,
         actions: [
           if (!r.won) primaryAction('Retry', _restart),
@@ -336,15 +449,21 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
         ],
       );
     }
-    final title = widget.mode == 'ai' ? (l == 0 ? 'You win' : 'You lose') : '${names[l]} wins';
+    final title = widget.mode == 'ai'
+        ? (l == 0 ? 'You win' : 'You lose')
+        : '${names[l]} wins';
     final color = l == 0 ? AppColors.p1 : AppColors.p2;
     return GameResultPanel(
       title: title,
       color: color,
-      subtitle: '${engine.scores[0]} — ${engine.scores[1]} (½ to second player) · no fusions left',
+      subtitle:
+          '${engine.scores[0]} — ${engine.scores[1]} (½ to second player) · no fusions left',
       actions: [
         primaryAction('Rematch', _restart),
-        secondaryAction('Menu', () => Navigator.of(context).popUntil((r) => r.isFirst)),
+        secondaryAction(
+          'Menu',
+          () => Navigator.of(context).popUntil((r) => r.isFirst),
+        ),
       ],
     );
   }
@@ -355,15 +474,36 @@ class _PlayerScore extends StatelessWidget {
   final int score;
   final Color color;
   final bool alignRight;
-  const _PlayerScore({required this.name, required this.score, required this.color, this.alignRight = false});
+  const _PlayerScore({
+    required this.name,
+    required this.score,
+    required this.color,
+    this.alignRight = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: alignRight
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
-        Text(name, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color)),
-        Text('$score', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: color)),
+        Text(
+          name,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+        Text(
+          '$score',
+          style: TextStyle(
+            fontSize: 30,
+            fontWeight: FontWeight.w900,
+            color: color,
+          ),
+        ),
       ],
     );
   }
