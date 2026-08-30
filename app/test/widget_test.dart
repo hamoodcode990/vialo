@@ -13,13 +13,10 @@ void main() {
     // onboarding-on-first-launch (Step 6) has its own dedicated test below.
     SharedPreferences.setMockInitialValues({'vialo_profile_v1': '{"onboarded":true}'});
     await tester.pumpWidget(const ProviderScope(child: VialoApp()));
-    // pumpAndSettle can't be used once the app has a perpetually-repeating
-    // animation (the animated gradient backdrop) — it would wait forever
-    // for zero pending frames. Bounded pumps instead: one to flush the
-    // profile-load future, one to ride out the ~1.8s intro reveal (Step 4)
-    // plus any transition animation.
+    // Bounded pumps rather than pumpAndSettle: one to flush the profile-load
+    // future, one to ride out the ~2.4s intro reveal (Step 4).
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 2000));
+    await tester.pump(const Duration(milliseconds: 2600));
 
     expect(find.text('VIALO'), findsOneWidget);
     expect(find.text('Split'), findsOneWidget);
@@ -37,13 +34,10 @@ void main() {
     // onboarding-on-first-launch (Step 6) has its own dedicated test below.
     SharedPreferences.setMockInitialValues({'vialo_profile_v1': '{"onboarded":true}'});
     await tester.pumpWidget(const ProviderScope(child: VialoApp()));
-    // pumpAndSettle can't be used once the app has a perpetually-repeating
-    // animation (the animated gradient backdrop) — it would wait forever
-    // for zero pending frames. Bounded pumps instead: one to flush the
-    // profile-load future, one to ride out the ~1.8s intro reveal (Step 4)
-    // plus any transition animation.
+    // Bounded pumps rather than pumpAndSettle: one to flush the profile-load
+    // future, one to ride out the ~2.4s intro reveal (Step 4).
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 2000));
+    await tester.pump(const Duration(milliseconds: 2600));
 
     await tester.tap(find.text('Pour').first);
     await tester.pump();
@@ -58,7 +52,7 @@ void main() {
     SharedPreferences.setMockInitialValues({}); // no saved profile => onboarded defaults to false
     await tester.pumpWidget(const ProviderScope(child: VialoApp()));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 2000));
+    await tester.pump(const Duration(milliseconds: 2600));
 
     expect(find.text("You're ready"), findsNothing); // last slide, not shown yet
     expect(find.text('Skip'), findsOneWidget);
@@ -76,7 +70,7 @@ void main() {
     SharedPreferences.setMockInitialValues({'vialo_profile_v1': '{"onboarded":true}'});
     await tester.pumpWidget(const ProviderScope(child: VialoApp()));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 2000));
+    await tester.pump(const Duration(milliseconds: 2600));
 
     // "Solo sort" sits below the fold on the test surface — scroll it into view.
     await tester.drag(find.text('VIALO'), const Offset(0, -400));

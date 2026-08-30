@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
 /// Cold-launch logo/wordmark reveal (CLAUDE.md Step 4). Runs once, fixed
-/// 1.8s duration — never longer than the "1.5-2.5s max" ceiling — then
-/// calls [onDone]. Independent of profile load time: [_AppGate] in main.dart
+/// 2.4s duration — the "1.5-2.5s max" ceiling, bumped up from 1.8s after
+/// it read as too rushed — then calls [onDone]. Independent of profile
+/// load time: [_AppGate] in main.dart
 /// keeps this on screen (its rest frame + a small spinner) if the
 /// shared_preferences read is still pending once the reveal finishes, so
 /// the player never sees a blank frame either way.
@@ -23,7 +24,7 @@ class IntroScreen extends StatefulWidget {
 }
 
 class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStateMixin {
-  static const _duration = Duration(milliseconds: 1800);
+  static const _duration = Duration(milliseconds: 2400);
   late final AnimationController _ctrl = AnimationController(vsync: this, duration: _duration);
 
   @override
@@ -52,16 +53,18 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
         child: AnimatedBuilder(
           animation: _ctrl,
           builder: (context, child) {
-            // Droplets pop in staggered (0.0-0.5 of the timeline), then the
-            // wordmark + tagline fade/slide up (0.35-0.85).
+            // Droplets pop in staggered (0.0-0.55 of the timeline), then the
+            // wordmark + tagline fade/slide up (0.4-0.9). Widened windows
+            // and a single-overshoot curve (not elasticOut's multi-wobble)
+            // so the reveal reads as smooth and deliberate, not a quick snap.
             const dropColors = [AppColors.p2, AppColors.violet, AppColors.p1, AppColors.gold];
             final dropScales = List.generate(4, (i) {
-              final start = i * 0.08;
-              final t = ((_ctrl.value - start) / 0.35).clamp(0.0, 1.0);
-              return Curves.elasticOut.transform(t);
+              final start = i * 0.09;
+              final t = ((_ctrl.value - start) / 0.42).clamp(0.0, 1.0);
+              return Curves.easeOutBack.transform(t);
             });
-            final wordT = Curves.easeOut.transform(((_ctrl.value - 0.35) / 0.5).clamp(0.0, 1.0));
-            final tagT = Curves.easeOut.transform(((_ctrl.value - 0.55) / 0.4).clamp(0.0, 1.0));
+            final wordT = Curves.easeOutCubic.transform(((_ctrl.value - 0.4) / 0.45).clamp(0.0, 1.0));
+            final tagT = Curves.easeOutCubic.transform(((_ctrl.value - 0.6) / 0.35).clamp(0.0, 1.0));
 
             return Column(
               mainAxisSize: MainAxisSize.min,
