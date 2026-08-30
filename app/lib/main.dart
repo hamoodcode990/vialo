@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'monetization/monetization_controller.dart';
@@ -31,6 +32,12 @@ class _VialoAppState extends ConsumerState<VialoApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(monetizationControllerProvider).initialize();
     });
+    // Android defaults to 60Hz even on 90/120Hz-capable screens unless an
+    // app opts in — iOS ProMotion is already covered by
+    // CADisableMinimumFrameDurationOnPhone in Info.plist. No-op on iOS/
+    // devices without a high-refresh-rate mode; swallow any failure the
+    // same way the rest of this app degrades rather than throws.
+    FlutterDisplayMode.setHighRefreshRate().catchError((_) {});
   }
 
   @override
@@ -48,7 +55,7 @@ class _VialoAppState extends ConsumerState<VialoApp> {
 }
 
 /// Cold-launch gate: always shows the [IntroScreen] reveal (Step 4) for its
-/// fixed ~1.8s, then — on a fresh install only, gated on
+/// fixed ~2.4s, then — on a fresh install only, gated on
 /// [PlayerProfile.onboarded] — the [OnboardingScreen] (Step 6), then the
 /// home screen. On the rare case the profile's single shared_preferences
 /// read is still pending once the reveal finishes, keeps the intro's rest
