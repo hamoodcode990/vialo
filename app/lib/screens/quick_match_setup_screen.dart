@@ -113,7 +113,7 @@ class _SegButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? AppColors.p1.withValues(alpha: 0.1) : AppColors.ink2,
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(color: selected ? AppColors.p1.withValues(alpha: 0.4) : AppColors.edge),
+          border: Border.all(color: selected ? AppColors.p1 : AppColors.outline, width: selected ? 3 : 2.5),
         ),
         child: Text(label, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: selected ? AppColors.p1 : AppColors.txt)),
       ),

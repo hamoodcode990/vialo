@@ -67,7 +67,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       decoration: BoxDecoration(
                         color: AppColors.ink2,
                         borderRadius: BorderRadius.circular(AppRadius.lg),
-                        border: Border.all(color: profile.avatarId == a.id ? AppColors.violet : AppColors.edge, width: profile.avatarId == a.id ? 2 : 1),
+                        border: Border.all(
+                          color: profile.avatarId == a.id ? AppColors.violet : AppColors.outline,
+                          width: profile.avatarId == a.id ? 3.5 : 2.5,
+                        ),
                       ),
                       alignment: Alignment.center,
                       child: AvatarGlyph(avatar: a, size: 44, ring: false),
@@ -78,9 +81,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const _Label('PROGRESS'),
             Row(
               children: [
-                Expanded(child: _StatTile(value: '⭐ $totalStars', label: 'total stars')),
+                Expanded(child: _StatTile(value: '⭐ $totalStars', label: 'total stars', color: AppColors.gold)),
                 const SizedBox(width: AppSpacing.sm),
-                Expanded(child: _StatTile(value: '${(profile.levelProgress['solo'] ?? 1) - 1}/300', label: 'solo cleared')),
+                Expanded(child: _StatTile(value: '${(profile.levelProgress['solo'] ?? 1) - 1}/300', label: 'solo cleared', color: AppColors.p1)),
               ],
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -106,16 +109,21 @@ class _Label extends StatelessWidget {
 class _StatTile extends StatelessWidget {
   final String value;
   final String label;
-  const _StatTile({required this.value, required this.label});
+  final Color color;
+  const _StatTile({required this.value, required this.label, this.color = AppColors.txt});
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(color: AppColors.ink2, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: AppColors.edge)),
+      decoration: BoxDecoration(
+        color: AppColors.ink2,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.outline, width: 3),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: color)),
           Text(label, style: const TextStyle(fontSize: 11, color: AppColors.mute)),
         ],
       ),
@@ -134,7 +142,11 @@ class _NavRow extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-        decoration: BoxDecoration(color: AppColors.ink2, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: AppColors.edge)),
+        decoration: BoxDecoration(
+          color: AppColors.ink2,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.outline, width: 3),
+        ),
         child: Row(
           children: [
             Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15))),

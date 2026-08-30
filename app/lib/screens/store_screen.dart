@@ -47,6 +47,7 @@ class StoreScreen extends ConsumerWidget {
                 title: kStarterPackProduct.title,
                 subtitle: kStarterPackProduct.subtitle,
                 price: kStarterPackProduct.fallbackPriceLabel,
+                accent: AppColors.gold,
                 onTap: () => buy(kProductStarterPack),
               ),
             ],
@@ -56,23 +57,26 @@ class StoreScreen extends ConsumerWidget {
                 title: product.title,
                 subtitle: null,
                 price: product.fallbackPriceLabel,
+                accent: AppColors.life,
                 onTap: () => buy(product.id),
               ),
-            _WatchAdRow(subtitle: '+1 life, free', onWatched: () => watch(kAdPlacementLife)),
+            _WatchAdRow(subtitle: '+1 life, free', accent: AppColors.life, onWatched: () => watch(kAdPlacementLife)),
             const _SectionLabel('COINS'),
             for (final product in kCoinProducts)
               _IapRow(
                 title: product.title,
                 subtitle: null,
                 price: product.fallbackPriceLabel,
+                accent: AppColors.coin,
                 onTap: () => buy(product.id),
               ),
-            _WatchAdRow(subtitle: '+25 coins, free', onWatched: () => watch(kAdPlacementCoins)),
+            _WatchAdRow(subtitle: '+25 coins, free', accent: AppColors.coin, onWatched: () => watch(kAdPlacementCoins)),
             const _SectionLabel('ADS'),
             _IapRow(
               title: kRemoveAdsProduct.title,
               subtitle: profile.adsRemoved ? 'Already removed' : kRemoveAdsProduct.subtitle,
               price: profile.adsRemoved ? null : kRemoveAdsProduct.fallbackPriceLabel,
+              accent: AppColors.violet,
               onTap: profile.adsRemoved ? null : () => buy(kProductRemoveAds),
             ),
             const _SectionLabel('PALETTE'),
@@ -101,6 +105,7 @@ class StoreScreen extends ConsumerWidget {
               title: 'Refill 1 life',
               subtitle: null,
               price: '75🪙',
+              accent: AppColors.gold,
               onTap: () {
                 if (ctrl.spendCoins(75)) {
                   ctrl.addLives(1);
@@ -134,8 +139,9 @@ class _IapRow extends StatelessWidget {
   final String title;
   final String? subtitle;
   final String? price;
+  final Color accent;
   final VoidCallback? onTap;
-  const _IapRow({required this.title, required this.subtitle, required this.price, required this.onTap});
+  const _IapRow({required this.title, required this.subtitle, required this.price, this.accent = AppColors.p1, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +151,7 @@ class _IapRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.ink2,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.edge),
+        border: Border.all(color: AppColors.outline, width: 3),
       ),
       child: Row(
         children: [
@@ -167,14 +173,15 @@ class _IapRow extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [AppColors.p1, AppColors.p1d]),
+                  gradient: LinearGradient(colors: [accent, Color.lerp(accent, Colors.black, 0.28)!]),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.outline, width: 2.5),
                 ),
                 child: Text(price!, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13)),
               ),
             )
           else
-            const Icon(Icons.check_circle_rounded, color: AppColors.p1),
+            Icon(Icons.check_circle_rounded, color: accent),
         ],
       ),
     );
@@ -183,8 +190,9 @@ class _IapRow extends StatelessWidget {
 
 class _WatchAdRow extends StatefulWidget {
   final String subtitle;
+  final Color accent;
   final Future<void> Function() onWatched;
-  const _WatchAdRow({required this.subtitle, required this.onWatched});
+  const _WatchAdRow({required this.subtitle, this.accent = AppColors.violet, required this.onWatched});
 
   @override
   State<_WatchAdRow> createState() => _WatchAdRowState();
@@ -201,7 +209,7 @@ class _WatchAdRowState extends State<_WatchAdRow> {
       decoration: BoxDecoration(
         color: AppColors.ink2,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.edge),
+        border: Border.all(color: AppColors.outline, width: 3),
       ),
       child: Row(
         children: [
@@ -229,8 +237,9 @@ class _WatchAdRowState extends State<_WatchAdRow> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [AppColors.violet, AppColors.violetd]),
+                gradient: LinearGradient(colors: [widget.accent, Color.lerp(widget.accent, Colors.black, 0.28)!]),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.outline, width: 2.5),
               ),
               child: Text(
                 _loading ? 'Loading…' : '▶ Watch',
@@ -270,7 +279,7 @@ class _PaletteRow extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.ink2,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: selected ? AppColors.p1.withValues(alpha: 0.4) : AppColors.edge),
+          border: Border.all(color: selected ? AppColors.p1 : AppColors.outline, width: selected ? 3.5 : 3),
         ),
         child: Row(
           children: [

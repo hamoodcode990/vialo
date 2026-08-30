@@ -572,7 +572,7 @@ class _HintChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.ink2,
           borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: AppColors.edge),
+          border: Border.all(color: AppColors.outline, width: 2.5),
         ),
         child: Text(
           label,

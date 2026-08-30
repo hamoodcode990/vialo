@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/mode_info.dart';
 import '../theme/spacing.dart';
 
 /// Lifetime win/loss breakdown per mode. Port of decant.html's `stats()`.
@@ -22,10 +23,10 @@ class StatsScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
-            _ModeRow(label: 'POUR', w: s.w, l: s.l),
-            _ModeRow(label: 'SPLIT', w: s.sw, l: s.sl),
-            _ModeRow(label: 'FUSE', w: s.fw, l: s.fl),
-            _ModeRow(label: 'RECIPE', w: s.rw, l: s.rl),
+            _ModeRow(label: 'POUR', w: s.w, l: s.l, accent: modeInfoFor('pour').color),
+            _ModeRow(label: 'SPLIT', w: s.sw, l: s.sl, accent: modeInfoFor('split').color),
+            _ModeRow(label: 'FUSE', w: s.fw, l: s.fl, accent: modeInfoFor('fuse').color),
+            _ModeRow(label: 'RECIPE', w: s.rw, l: s.rl, accent: modeInfoFor('recipe').color),
             const _Label('OVERALL'),
             Row(
               children: [
@@ -70,7 +71,8 @@ class _ModeRow extends StatelessWidget {
   final String label;
   final int w;
   final int l;
-  const _ModeRow({required this.label, required this.w, required this.l});
+  final Color accent;
+  const _ModeRow({required this.label, required this.w, required this.l, required this.accent});
 
   @override
   Widget build(BuildContext context) {
@@ -80,11 +82,16 @@ class _ModeRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w800, color: AppColors.mute)),
+          Row(
+            children: [
+              Container(width: 8, height: 8, margin: const EdgeInsets.only(right: 6), decoration: BoxDecoration(color: accent, shape: BoxShape.circle)),
+              Text(label, style: TextStyle(fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w800, color: accent)),
+            ],
+          ),
           const SizedBox(height: 6),
           Row(
             children: [
-              Expanded(child: _Stat(value: '$w', label: 'wins', color: AppColors.p1)),
+              Expanded(child: _Stat(value: '$w', label: 'wins', color: accent)),
               const SizedBox(width: 8),
               Expanded(child: _Stat(value: '$l', label: 'losses')),
               const SizedBox(width: 8),
@@ -107,7 +114,11 @@ class _Stat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(color: AppColors.ink2, borderRadius: BorderRadius.circular(AppRadius.lg), border: Border.all(color: AppColors.edge)),
+      decoration: BoxDecoration(
+        color: AppColors.ink2,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.outline, width: 2.5),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

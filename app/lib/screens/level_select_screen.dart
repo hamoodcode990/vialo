@@ -5,6 +5,7 @@ import '../game/game.dart';
 import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/cosmetics.dart';
+import '../theme/mode_info.dart';
 import '../theme/spacing.dart';
 import '../widgets/header_bar.dart';
 import '../widgets/star_row.dart';
@@ -82,7 +83,7 @@ class _LevelChunk extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$start–$end', style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.goldd, fontSize: 15)),
+          Text('$start–$end', style: TextStyle(fontWeight: FontWeight.w800, color: modeInfoFor(mode).color, fontSize: 15)),
           const SizedBox(height: 8),
           GridView.count(
             crossAxisCount: 6,
@@ -117,14 +118,15 @@ class _LevelChip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final done = stars > 0;
+    final accent = modeInfoFor(mode).color;
     return GestureDetector(
       onTap: () => _open(context, ref),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          gradient: done ? const LinearGradient(colors: [AppColors.p1, AppColors.p1d]) : null,
+          gradient: done ? LinearGradient(colors: [accent, Color.lerp(accent, Colors.black, 0.28)!]) : null,
           color: done ? null : AppColors.ink2,
-          border: Border.all(color: AppColors.edge),
+          border: Border.all(color: AppColors.outline, width: 2.5),
           boxShadow: [BoxShadow(color: AppColors.txt.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 3))],
         ),
         alignment: Alignment.center,

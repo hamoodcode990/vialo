@@ -229,7 +229,7 @@ class _IconButton extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: AppColors.ink2,
-            border: Border.all(color: AppColors.edge),
+            border: Border.all(color: AppColors.outline, width: 2.5),
             boxShadow: [BoxShadow(color: AppColors.txt.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 3))],
           ),
           child: Text(emoji, style: const TextStyle(fontSize: 17)),
