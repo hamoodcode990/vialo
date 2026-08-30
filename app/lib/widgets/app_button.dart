@@ -75,11 +75,14 @@ class _AppButtonState extends ConsumerState<AppButton> {
               gradient: c.gradient,
               borderRadius: BorderRadius.circular(AppRadius.lg),
               border: c.border,
+              // A soft colour-matched glow rather than a glossy bevel — reads
+              // as neon/futuristic against the dark backdrop (CLAUDE.md,
+              // updated 2026-08-30: glow effects are now part of the design).
               boxShadow: c.gradient == null
                   ? null
                   : [
-                      BoxShadow(color: c.bg.withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 8)),
-                      const BoxShadow(color: Colors.white, blurRadius: 0, spreadRadius: -0.5, blurStyle: BlurStyle.inner),
+                      BoxShadow(color: c.bg.withValues(alpha: 0.55), blurRadius: 22, spreadRadius: 1, offset: const Offset(0, 6)),
+                      BoxShadow(color: c.bg.withValues(alpha: 0.25), blurRadius: 40, spreadRadius: 2),
                     ],
             ),
             child: Row(

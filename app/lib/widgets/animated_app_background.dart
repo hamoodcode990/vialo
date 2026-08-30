@@ -2,20 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
-/// Full-screen soft gradient behind every screen (CLAUDE.md Step 3 theme
-/// pass) — mounted once at the MaterialApp root via `builder:` so every
-/// Scaffold (which is transparent, see buildAppTheme) shows it through.
+/// Full-screen backdrop behind every screen — mounted once at the
+/// MaterialApp root via `builder:` so every Scaffold (which is transparent,
+/// see buildAppTheme) shows it through. Dark/futuristic theme (CLAUDE.md,
+/// updated 2026-08-30): a deep near-black navy-to-plum gradient, matching
+/// the app icon's own dark tube-pour art instead of clashing with it.
 ///
-/// This used to drift slowly (first a 60fps AnimationController, then a
-/// throttled Timer after that was reported as janky) — now fully static.
-/// Reported lag persisted even after throttling, so rather than keep
-/// tuning an update rate I can't measure, this removes the one thing that
-/// was *guaranteed* to cost something on every frame: there is no ticker,
-/// no Timer, nothing scheduling repaints here at all now. If page
-/// transitions are still slow after this, the cause is elsewhere (a
-/// specific screen's build/animation work, or the app running in debug
-/// mode — debug builds are inherently much slower than release/profile,
-/// worth checking before hunting for more code-level causes).
+/// Fully static — no ticker, no Timer, nothing scheduling a repaint here.
+/// This was previously an animated drift (first a 60fps AnimationController,
+/// then a throttled Timer) but reported lag persisted even after
+/// throttling, so rather than keep tuning an update rate that can't be
+/// measured in this environment, the animation was removed entirely.
 class AnimatedAppBackground extends StatelessWidget {
   final Widget child;
   const AnimatedAppBackground({super.key, required this.child});
@@ -27,7 +24,7 @@ class AnimatedAppBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFBF7EE), Color(0xFFF3E9FF), Color(0xFFE9FBF2), Color(0xFFFFF1E6)],
+          colors: [Color(0xFF0A0C16), Color(0xFF141230), Color(0xFF0D1220), Color(0xFF0A0C16)],
           stops: [0.0, 0.4, 0.7, 1.0],
         ),
       ),

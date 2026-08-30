@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'spacing.dart';
 
-/// Assembles the Flutter [ThemeData] from the design tokens. Bright,
-/// glossy, chunky per the mainstream-puzzle-app restyle — no dark mode, no
-/// neon-as-default (Neon stays an opt-in tube palette, never the app chrome).
+/// Assembles the Flutter [ThemeData] from the design tokens. Dark,
+/// futuristic, simple — neon-adjacent accents and glow are part of the
+/// design now (CLAUDE.md, updated 2026-08-30 override of the earlier
+/// warm-light "no dark mode" decision).
 ThemeData buildAppTheme() {
   final scheme = ColorScheme.fromSeed(
     seedColor: AppColors.p1,
-    brightness: Brightness.light,
+    brightness: Brightness.dark,
     primary: AppColors.p1,
     secondary: AppColors.violet,
     tertiary: AppColors.gold,

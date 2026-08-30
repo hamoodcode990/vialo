@@ -4,9 +4,25 @@ Single self-contained HTML file (`decant.html`). No build step, no dependencies,
 no CDN, no external assets. Open it in Chrome to test.
 
 Shared-board strategy game themed as Madame Corvel's atelier — the player is an
-apprentice perfumer. Warm ivory/parchment, emerald/rose/plum/gold, serif wordmark.
-No dark mode, no neon, no glow effects. This was settled after several rounds of
-iteration; do not reintroduce dark or neon styling.
+apprentice perfumer.
+
+**Visual identity (updated, supersedes earlier "no dark mode" decision):**
+dark, futuristic, simple. The original theme was warm ivory/parchment with a
+serif wordmark and an explicit "no dark mode, no neon, no glow" rule, settled
+after several rounds of iteration — that rule is now explicitly overridden by
+the user (2026-08-30): the app is moving to a dark, tech-forward look (deep
+near-black/navy chrome, saturated neon-adjacent accents, glow effects
+permitted) while staying simple/uncluttered, not busy or gaudy. This applies
+to the Flutter app (`app/`), which is the actual shipping target. decant.html
+hasn't been re-themed to match as of this note — it's still the original warm
+light theme — since it's the reference implementation, not the shipping
+vehicle (see Shipping below); re-theme it too if it's ever used for anything
+user-facing again.
+
+The tube colour palettes (`app/lib/theme/tube_palettes.dart` /
+decant.html's `PAL`) are unaffected by this — those are deuteranopia-audited
+gameplay cosmetics, not app chrome, and stay as measured regardless of what
+the surrounding UI looks like.
 
 ## Do not change these without being asked
 

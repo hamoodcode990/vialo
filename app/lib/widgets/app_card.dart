@@ -43,7 +43,17 @@ class _AppCardState extends State<AppCard> {
             color: AppColors.ink2,
             borderRadius: BorderRadius.circular(AppRadius.xxl),
             border: Border.all(color: AppColors.outline, width: 3),
-            boxShadow: [BoxShadow(color: AppColors.txt.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 6))],
+            // A faint glow in the card's own accent when it has one (mode
+            // tiles, hub rows), else a neutral ambient one — CLAUDE.md,
+            // updated 2026-08-30: glow is part of the dark/futuristic theme.
+            boxShadow: [
+              BoxShadow(
+                color: (widget.accentColor ?? AppColors.outline).withValues(alpha: 0.22),
+                blurRadius: 24,
+                spreadRadius: 1,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.xxl),
