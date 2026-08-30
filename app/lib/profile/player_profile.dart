@@ -46,6 +46,11 @@ class PlayerProfile {
   /// been shown/skipped. Once true, it never shows again for this player.
   bool onboarded;
 
+  /// The stable Apple user identifier from Sign in with Apple (CLAUDE.md
+  /// Step 7), or null if never linked. Sign-in is entirely optional — this
+  /// being null never blocks play, it only means progress stays local-only.
+  String? appleUserId;
+
   final DuelStats stats;
   final DailyChallenge daily;
   final Set<String> achievements;
@@ -69,6 +74,7 @@ class PlayerProfile {
     this.muted = false,
     this.bestOf = 3,
     this.onboarded = false,
+    this.appleUserId,
     DuelStats? stats,
     DailyChallenge? daily,
     Set<String>? achievements,
@@ -228,6 +234,7 @@ class PlayerProfile {
         muted: json['muted'] as bool? ?? false,
         bestOf: json['bestOf'] as int? ?? 3,
         onboarded: json['onboarded'] as bool? ?? false,
+        appleUserId: json['appleUserId'] as String?,
         stats: json['stats'] != null
             ? DuelStats.fromJson(json['stats'] as Map<String, dynamic>)
             : null,
@@ -256,6 +263,7 @@ class PlayerProfile {
         'muted': muted,
         'bestOf': bestOf,
         'onboarded': onboarded,
+        'appleUserId': appleUserId,
         'stats': stats.toJson(),
         'daily': daily.toJson(),
         'achievements': achievements.toList(),

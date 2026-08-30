@@ -23,6 +23,11 @@ class ProfileController extends AsyncNotifier<PlayerProfile> {
 
   PlayerProfile get _current => state.value ?? PlayerProfile();
 
+  /// Public read of the current profile — used by AccountController, which
+  /// lives outside this file and needs a snapshot to compare/serialize
+  /// rather than a mutation method of its own.
+  PlayerProfile get currentProfile => _current;
+
   int _now() => DateTime.now().millisecondsSinceEpoch;
 
   void _commit(PlayerProfile p) {
@@ -138,6 +143,25 @@ class ProfileController extends AsyncNotifier<PlayerProfile> {
     if (p.onboarded) return;
     p.onboarded = true;
     _commit(p.clone());
+  }
+
+  void linkAppleAccount(String appleUserId) {
+    final p = _current;
+    p.appleUserId = appleUserId;
+    _commit(p.clone());
+  }
+
+  void unlinkAppleAccount() {
+    final p = _current;
+    p.appleUserId = null;
+    _commit(p.clone());
+  }
+
+  /// Wholesale-replaces the profile — used only for the explicit "Restore
+  /// from iCloud" choice (CLAUDE.md Step 7), never as a side effect of any
+  /// other action, since it discards whatever local progress preceded it.
+  void replaceProfile(PlayerProfile replacement) {
+    _commit(replacement.clone());
   }
 
   void setAdsRemoved() {
