@@ -1,32 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// Avatar and background cosmetics.
 ///
-/// Avatars: 8 functional placeholders (icon-on-gradient-circle), standing
-/// in for real hand-drawn art that hasn't been delivered into this repo
-/// yet — see AvatarGlyph below for the "why pure-Flutter, not image
-/// assets" note. Flag back once real SVG/PNG art exists; swapping it in
-/// only means changing AvatarGlyph's build() to an Image/SvgPicture, the
-/// ids and picker UI don't need to change.
+/// Avatars: 8 placeholder icons (flat vector, icon-on-gradient-tile),
+/// shipped as self-contained SVGs under assets/avatars/ — the tile
+/// background, gradient, and glyph are all baked into each file, so
+/// AvatarGlyph just draws the SVG and clips it to match its own rounded-
+/// square art direction. Still functional placeholders, not final art.
 ///
 /// Backgrounds are a hue-rotate on the animated gradient rather than
 /// separate art, ported from decant.html's BGSKINS array.
 class AvatarOption {
   final String id;
-  final IconData icon;
-  final List<Color> gradient;
-  const AvatarOption(this.id, this.icon, this.gradient);
+  final String asset;
+  const AvatarOption(this.id, this.asset);
 }
 
 const List<AvatarOption> kAvatars = [
-  AvatarOption('drop_blue', Icons.water_drop_rounded, [Color(0xFF4FC3F7), Color(0xFF0288D1)]),
-  AvatarOption('drop_pink', Icons.water_drop_rounded, [Color(0xFFFF8FB1), Color(0xFFE91E63)]),
-  AvatarOption('star_gold', Icons.star_rounded, [Color(0xFFFFD54F), Color(0xFFF9A825)]),
-  AvatarOption('leaf_green', Icons.eco_rounded, [Color(0xFF81C784), Color(0xFF2E7D32)]),
-  AvatarOption('bolt_purple', Icons.bolt_rounded, [Color(0xFFB39DDB), Color(0xFF673AB7)]),
-  AvatarOption('flame_orange', Icons.local_fire_department_rounded, [Color(0xFFFFB74D), Color(0xFFE65100)]),
-  AvatarOption('moon_teal', Icons.nightlight_round, [Color(0xFF80CBC4), Color(0xFF00695C)]),
-  AvatarOption('heart_red', Icons.favorite_rounded, [Color(0xFFEF9A9A), Color(0xFFC62828)]),
+  AvatarOption('drop_blue', 'assets/avatars/drop_blue.svg'),
+  AvatarOption('drop_pink', 'assets/avatars/drop_pink.svg'),
+  AvatarOption('star_gold', 'assets/avatars/star_gold.svg'),
+  AvatarOption('leaf_green', 'assets/avatars/leaf_green.svg'),
+  AvatarOption('bolt_purple', 'assets/avatars/bolt_purple.svg'),
+  AvatarOption('flame_orange', 'assets/avatars/flame_orange.svg'),
+  AvatarOption('moon_teal', 'assets/avatars/moon_teal.svg'),
+  AvatarOption('heart_red', 'assets/avatars/heart_red.svg'),
 ];
 
 AvatarOption avatarById(String id) =>
@@ -53,8 +52,10 @@ BackgroundSkin backgroundSkinById(String id) => kBackgroundSkins.firstWhere(
       orElse: () => kBackgroundSkins.first,
     );
 
-/// Icon-on-gradient-circle avatar rendering, shared by the header chip and
-/// the profile picker grid so both stay pixel-for-pixel consistent.
+/// Avatar tile rendering, shared by the header chip and the profile picker
+/// grid so both stay pixel-for-pixel consistent. The SVG art is already a
+/// rounded square (rx 44 on a 200x200 canvas — a ~0.22 corner ratio), so
+/// this clips to that same ratio rather than forcing a circle.
 class AvatarGlyph extends StatelessWidget {
   final AvatarOption avatar;
   final double size;
@@ -64,17 +65,19 @@ class AvatarGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final radius = size * 0.22;
     return Container(
       width: size,
       height: size,
-      alignment: Alignment.center,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(radius),
         border: ring ? Border.all(color: Colors.white, width: 2) : null,
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: avatar.gradient),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 10, offset: const Offset(0, 3))],
       ),
-      child: Icon(avatar.icon, size: size * 0.52, color: Colors.white),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: SvgPicture.asset(avatar.asset, width: size, height: size, fit: BoxFit.cover),
+      ),
     );
   }
 }
