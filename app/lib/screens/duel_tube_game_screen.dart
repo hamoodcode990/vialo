@@ -17,7 +17,13 @@ import '../widgets/game_result_panel.dart';
 import '../widgets/pour_flight_overlay.dart';
 import '../widgets/tube_view.dart';
 
-const Map<String, int> kBotBonus = {'easy': 25, 'normal': 40, 'hard': 60};
+/// Small flat coin reward for a Quick Match AI win — deliberately not a
+/// meaningful income source. Quick Match is free/unlimited and costs no
+/// lives, so at the old 25/40/60 it was trivially farmable (repeatedly
+/// beating "easy" AI, which blunders often, for free coins) and undercut
+/// the level ladder as the game's actual gated progression currency. Kept
+/// small rather than zero so a win still pays off something.
+const Map<String, int> kBotBonus = {'easy': 3, 'normal': 5, 'hard': 8};
 
 /// Pour, Split and Recipe all share this board (a row of tubes) and this
 /// interaction model (tap to lift, tap again to pour) — port of
