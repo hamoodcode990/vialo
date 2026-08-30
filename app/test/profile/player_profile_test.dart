@@ -199,6 +199,7 @@ void main() {
       p.backgroundId = 'bg2';
       p.muted = true;
       p.bestOf = 5;
+      p.onboarded = true;
       p.unlockedPalettes.add('neon');
       p.unlockedBackgrounds.add('bg2');
       p.achievements.add('first_win');
@@ -225,6 +226,7 @@ void main() {
       expect(restored.backgroundId, p.backgroundId);
       expect(restored.muted, p.muted);
       expect(restored.bestOf, p.bestOf);
+      expect(restored.onboarded, p.onboarded);
       expect(restored.stats.toJson(), equals(p.stats.toJson()));
       expect(restored.daily.toJson(), equals(p.daily.toJson()));
       expect(restored.achievements, equals(p.achievements));

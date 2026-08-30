@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'monetization/monetization_controller.dart';
 import 'screens/home_screen.dart';
 import 'screens/intro_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'state/profile_provider.dart';
 import 'theme/app_theme.dart';
 import 'widgets/animated_app_background.dart';
@@ -47,12 +48,13 @@ class _VialoAppState extends ConsumerState<VialoApp> {
 }
 
 /// Cold-launch gate: always shows the [IntroScreen] reveal (Step 4) for its
-/// fixed ~1.8s, then the home screen — or, on the rare case the profile's
-/// single shared_preferences read is still pending once the reveal
-/// finishes, keeps the intro's rest frame up with a small spinner rather
-/// than a blank frame, per CLAUDE.md Step 4's "never a blank frame" rule.
-/// No screen past this gate ever has to handle "profile not loaded yet" —
-/// see ProfileController.build().
+/// fixed ~1.8s, then — on a fresh install only, gated on
+/// [PlayerProfile.onboarded] — the [OnboardingScreen] (Step 6), then the
+/// home screen. On the rare case the profile's single shared_preferences
+/// read is still pending once the reveal finishes, keeps the intro's rest
+/// frame up with a small spinner rather than a blank frame, per CLAUDE.md
+/// Step 4's "never a blank frame" rule. No screen past this gate ever has
+/// to handle "profile not loaded yet" — see ProfileController.build().
 class _AppGate extends ConsumerStatefulWidget {
   const _AppGate();
 
@@ -75,7 +77,7 @@ class _AppGateState extends ConsumerState<_AppGate> {
       );
     }
     return profileAsync.when(
-      data: (_) => const HomeScreen(),
+      data: (profile) => profile.onboarded ? const HomeScreen() : const OnboardingScreen(),
       loading: () => const IntroScreen(onDone: _noop, showLoadingSpinner: true, animate: false),
       error: (err, st) => const HomeScreen(), // ProfileRepository.load() already falls back to defaults
     );

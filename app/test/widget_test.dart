@@ -8,7 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets('VialoApp boots to the home screen', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({});
+    // onboarded:true so these tests land straight on the home screen —
+    // onboarding-on-first-launch (Step 6) has its own dedicated test below.
+    SharedPreferences.setMockInitialValues({'vialo_profile_v1': '{"onboarded":true}'});
     await tester.pumpWidget(const ProviderScope(child: VialoApp()));
     // pumpAndSettle can't be used once the app has a perpetually-repeating
     // animation (the animated gradient backdrop) — it would wait forever
@@ -30,7 +32,9 @@ void main() {
   });
 
   testWidgets('tapping a mode tile opens its hub', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({});
+    // onboarded:true so these tests land straight on the home screen —
+    // onboarding-on-first-launch (Step 6) has its own dedicated test below.
+    SharedPreferences.setMockInitialValues({'vialo_profile_v1': '{"onboarded":true}'});
     await tester.pumpWidget(const ProviderScope(child: VialoApp()));
     // pumpAndSettle can't be used once the app has a perpetually-repeating
     // animation (the animated gradient backdrop) — it would wait forever
@@ -47,5 +51,23 @@ void main() {
     expect(find.text('Levels'), findsOneWidget);
     expect(find.text('Quick match'), findsOneWidget);
     expect(find.text('Pass & play'), findsOneWidget);
+  });
+
+  testWidgets('fresh install shows onboarding once, then Skip reaches the home screen', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({}); // no saved profile => onboarded defaults to false
+    await tester.pumpWidget(const ProviderScope(child: VialoApp()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 2000));
+
+    expect(find.text("You're ready"), findsNothing); // last slide, not shown yet
+    expect(find.text('Skip'), findsOneWidget);
+    expect(find.text('VIALO'), findsNothing); // home screen not reached yet
+
+    await tester.tap(find.text('Skip'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('VIALO'), findsOneWidget);
+    expect(find.text('Split'), findsOneWidget);
   });
 }

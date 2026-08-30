@@ -42,6 +42,10 @@ class PlayerProfile {
   bool muted;
   int bestOf; // 3 or 5, Quick Match match length
 
+  /// Whether the first-launch onboarding overlay (CLAUDE.md Step 6) has
+  /// been shown/skipped. Once true, it never shows again for this player.
+  bool onboarded;
+
   final DuelStats stats;
   final DailyChallenge daily;
   final Set<String> achievements;
@@ -64,6 +68,7 @@ class PlayerProfile {
     this.backgroundId = 'bg1',
     this.muted = false,
     this.bestOf = 3,
+    this.onboarded = false,
     DuelStats? stats,
     DailyChallenge? daily,
     Set<String>? achievements,
@@ -222,6 +227,7 @@ class PlayerProfile {
         backgroundId: json['backgroundId'] as String? ?? 'bg1',
         muted: json['muted'] as bool? ?? false,
         bestOf: json['bestOf'] as int? ?? 3,
+        onboarded: json['onboarded'] as bool? ?? false,
         stats: json['stats'] != null
             ? DuelStats.fromJson(json['stats'] as Map<String, dynamic>)
             : null,
@@ -249,6 +255,7 @@ class PlayerProfile {
         'backgroundId': backgroundId,
         'muted': muted,
         'bestOf': bestOf,
+        'onboarded': onboarded,
         'stats': stats.toJson(),
         'daily': daily.toJson(),
         'achievements': achievements.toList(),

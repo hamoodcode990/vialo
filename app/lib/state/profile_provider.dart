@@ -133,6 +133,13 @@ class ProfileController extends AsyncNotifier<PlayerProfile> {
     _commit(p.clone());
   }
 
+  void completeOnboarding() {
+    final p = _current;
+    if (p.onboarded) return;
+    p.onboarded = true;
+    _commit(p.clone());
+  }
+
   void setAdsRemoved() {
     final p = _current;
     p.adsRemoved = true;
