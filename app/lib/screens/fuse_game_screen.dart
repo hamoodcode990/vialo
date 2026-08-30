@@ -213,9 +213,9 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
     if (_isLevelRun) {
       if (won) {
         final stars = duelStars(kind: 'fuse', myScore: engine.scores[0], oppScore: engine.scores[1], colors: 0);
-        final coins = ctrl.recordLevelWin('fuse', widget.levelNumber!, stars);
+        final result = ctrl.recordLevelWin('fuse', widget.levelNumber!, stars);
         audio.coinGain();
-        levelResult = (won: true, stars: stars, coins: coins);
+        levelResult = (won: true, stars: stars, coins: result.coinsEarned);
       } else {
         ctrl.loseLife();
         levelResult = (won: false, stars: null, coins: null);

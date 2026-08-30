@@ -62,20 +62,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               crossAxisSpacing: 10,
               children: [
                 for (final a in kAvatars)
-                  GestureDetector(
-                    onTap: () => ctrl.setAvatar(a.id),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.ink2,
-                        borderRadius: BorderRadius.circular(AppRadius.lg),
-                        border: Border.all(
-                          color: profile.avatarId == a.id ? AppColors.violet : AppColors.outline,
-                          width: profile.avatarId == a.id ? 3.5 : 2.5,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: AvatarGlyph(avatar: a, size: 44, ring: false),
-                    ),
+                  _AvatarTile(
+                    avatar: a,
+                    selected: profile.avatarId == a.id,
+                    unlocked: (profile.levelProgress['solo'] ?? 1) >= a.unlockLevel,
+                    onTap: () {
+                      if ((profile.levelProgress['solo'] ?? 1) >= a.unlockLevel) {
+                        ctrl.setAvatar(a.id);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Unlocks at Solo level ${a.unlockLevel}')),
+                        );
+                      }
+                    },
                   ),
               ],
             ),
@@ -90,6 +89,57 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: AppSpacing.lg),
             _NavRow(label: 'Stats', onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StatsScreen()))),
             _NavRow(label: 'Settings', onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const SettingsScreen()))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One avatar-picker tile. Locked avatars stay visible (never hidden —
+/// "seeing what's coming is part of the motivation") but greyed out with a
+/// lock badge showing the required level; tapping one shows the same
+/// "Unlocks at Level X" info via [onTap] rather than doing nothing.
+class _AvatarTile extends StatelessWidget {
+  final AvatarOption avatar;
+  final bool selected;
+  final bool unlocked;
+  final VoidCallback onTap;
+  const _AvatarTile({required this.avatar, required this.selected, required this.unlocked, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.ink2,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: selected ? AppColors.violet : AppColors.outline,
+            width: selected ? 3.5 : 2.5,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Opacity(
+              opacity: unlocked ? 1 : 0.3,
+              child: AvatarGlyph(avatar: avatar, size: 44, ring: false),
+            ),
+            if (!unlocked)
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.lock_rounded, color: AppColors.txt, size: 18),
+                  const SizedBox(height: 1),
+                  Text(
+                    'Lvl ${avatar.unlockLevel}',
+                    style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: AppColors.txt),
+                  ),
+                ],
+              ),
           ],
         ),
       ),

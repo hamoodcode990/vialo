@@ -43,6 +43,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
   DateTime? _startedAt;
   int? starsEarned;
   int? coinsEarned;
+  List<String> newlyUnlockedAvatars = [];
   bool _lifeSpent = false;
   bool animating = false;
 
@@ -96,6 +97,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
     _startedAt = null;
     starsEarned = null;
     coinsEarned = null;
+    newlyUnlockedAvatars = [];
     _lifeSpent = false;
   }
 
@@ -201,12 +203,13 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
       moves: board.moves,
       par: par,
     );
-    final earned = ref
+    final result = ref
         .read(profileControllerProvider.notifier)
         .recordLevelWin('solo', widget.levelNumber!, stars);
     audio.coinGain();
     starsEarned = stars;
-    coinsEarned = earned;
+    coinsEarned = result.coinsEarned;
+    newlyUnlockedAvatars = result.newlyUnlockedAvatars;
   }
 
   void _onFailed() {
@@ -487,6 +490,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
         subtitle: widget.isDaily
             ? '$timeStr · ${board.moves} moves · 🔥 streak +1 · +50 coins'
             : '$timeStr · ${board.moves} moves${coinsEarned != null ? ' · +$coinsEarned coins' : ''}',
+        unlockedAvatarIds: newlyUnlockedAvatars,
         actions: actions,
       );
     }

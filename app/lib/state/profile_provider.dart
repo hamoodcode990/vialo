@@ -87,12 +87,16 @@ class ProfileController extends AsyncNotifier<PlayerProfile> {
     return ok;
   }
 
-  /// Returns the coins awarded.
-  int recordLevelWin(String mode, int levelNumber, int starsEarned) {
+  /// Returns the coins awarded and any avatars newly unlocked by this win.
+  ({int coinsEarned, List<String> newlyUnlockedAvatars}) recordLevelWin(
+    String mode,
+    int levelNumber,
+    int starsEarned,
+  ) {
     final p = _current;
-    final earned = p.recordLevelWin(mode, levelNumber, starsEarned);
+    final result = p.recordLevelWin(mode, levelNumber, starsEarned);
     _commit(p.clone());
-    return earned;
+    return result;
   }
 
   void recordAiResult(String kind, bool won, int myScore) {

@@ -267,13 +267,13 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
           oppScore: engine.scores[1],
           colors: engine.colors,
         );
-        final coins = ctrl.recordLevelWin(
+        final result = ctrl.recordLevelWin(
           widget.kind,
           widget.levelNumber!,
           stars,
         );
         audio.coinGain();
-        levelResult = (won: true, stars: stars, coins: coins);
+        levelResult = (won: true, stars: stars, coins: result.coinsEarned);
       } else {
         ctrl.loseLife();
         levelResult = (won: false, stars: null, coins: null);

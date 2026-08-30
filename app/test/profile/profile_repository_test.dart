@@ -25,13 +25,13 @@ void main() {
     final profile = await repo.load();
     profile.name = 'Tester';
     profile.coins = 250;
-    final earned = profile.recordLevelWin('pour', 1, 3); // adds its own coins
+    final result = profile.recordLevelWin('pour', 1, 3); // adds its own coins
     profile.recordAiResult('fuse', true, 4);
     await repo.save(profile);
 
     final reloaded = await repo.load();
     expect(reloaded.name, 'Tester');
-    expect(reloaded.coins, 250 + earned);
+    expect(reloaded.coins, 250 + result.coinsEarned);
     expect(reloaded.levelProgress['pour'], 2);
     expect(reloaded.starsFor('pour', 1), 3);
     expect(reloaded.stats.fw, 1);

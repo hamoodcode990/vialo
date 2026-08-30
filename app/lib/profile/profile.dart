@@ -2,6 +2,7 @@
 /// repository. No UI here — see Phase 3 of flutter_port_plan.md.
 library;
 
+export 'avatar_unlocks.dart';
 export 'daily_challenge.dart';
 export 'duel_stats.dart';
 export 'level_counts.dart';

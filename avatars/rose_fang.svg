@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="400" height="400">
+<defs>
+<radialGradient id="bg" cx="50%" cy="35%" r="75%">
+<stop offset="0" stop-color="#1A2035"/><stop offset="100%" stop-color="#05070E"/>
+</radialGradient>
+</defs>
+<rect x="4" y="4" width="192" height="192" rx="36" fill="url(#bg)"/>
+<rect x="4" y="4" width="192" height="192" rx="36" fill="none" stroke="#000" stroke-width="6"/>
+<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF3D81"/><stop offset="1" stop-color="#A31350"/></linearGradient></defs>
+<path d="M100 34 C130 78 154 108 154 136 a54 54 0 0 1 -108 0 C46 108 70 78 100 34 z"
+ fill="url(#g)" stroke="#000" stroke-width="7"/>
+<path d="M74 118 L92 108 L74 128 Z" fill="#000"/>
+<path d="M126 118 L108 108 L126 128 Z" fill="#000"/>
+<path d="M78 100 L94 112" stroke="#000" stroke-width="6" stroke-linecap="round"/>
+<path d="M122 100 L106 112" stroke="#000" stroke-width="6" stroke-linecap="round"/>
+<path d="M88 138 L94 154 L100 138 L106 154 L112 138" fill="none" stroke="#000" stroke-width="6"
+ stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M92 138 L88 150 L96 142 Z" fill="#fff"/>
+<path d="M108 138 L112 150 L104 142 Z" fill="#fff"/>
+</svg>

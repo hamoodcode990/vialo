@@ -4,6 +4,7 @@
 // shared_preferences plugin and transitively package:flutter — that would
 // stop this suite from running under plain `dart test`). See
 // ProfileRepository's own tests (flutter test) for the persistence I/O.
+import 'package:vialo/profile/avatar_unlocks.dart';
 import 'package:vialo/profile/player_profile.dart';
 import 'package:test/test.dart';
 
@@ -147,9 +148,47 @@ void main() {
 
     test('coins awarded are 10 + 5*stars', () {
       final p = PlayerProfile(livesUpdatedAt: 0, coins: 0);
-      final earned = p.recordLevelWin('split', 1, 3);
-      expect(earned, 25);
+      final result = p.recordLevelWin('split', 1, 3);
+      expect(result.coinsEarned, 25);
       expect(p.coins, 25);
+    });
+  });
+
+  group('avatar unlocks', () {
+    test('starting roster avatars have no unlock requirement', () {
+      expect(unlockLevelFor('emerald_shard'), 1);
+      expect(unlockLevelFor('rose_fang'), 1);
+      expect(unlockLevelFor('cyan_blitz'), 1);
+    });
+
+    test('a Solo win crossing a milestone reports the newly-unlocked avatar', () {
+      final p = PlayerProfile(livesUpdatedAt: 0);
+      // Level progress starts at 1; clearing levels 1..24 advances it to 25,
+      // crossing gold_fury's threshold on the level-24 win.
+      for (var n = 1; n < 24; n++) {
+        final r = p.recordLevelWin('solo', n, 2);
+        expect(r.newlyUnlockedAvatars, isEmpty);
+      }
+      final crossing = p.recordLevelWin('solo', 24, 2);
+      expect(crossing.newlyUnlockedAvatars, ['gold_fury']);
+      expect(p.levelProgress['solo'], 25);
+    });
+
+    test('replaying an already-cleared level does not re-report an unlock', () {
+      final p = PlayerProfile(livesUpdatedAt: 0);
+      for (var n = 1; n <= 24; n++) {
+        p.recordLevelWin('solo', n, 2);
+      }
+      // Frontier is now 25 — replaying level 24 for a better star rating
+      // shouldn't move the frontier, so shouldn't re-report gold_fury.
+      final replay = p.recordLevelWin('solo', 24, 3);
+      expect(replay.newlyUnlockedAvatars, isEmpty);
+    });
+
+    test('a duel-mode win never reports an avatar unlock (Solo-only system)', () {
+      final p = PlayerProfile(livesUpdatedAt: 0);
+      final r = p.recordLevelWin('pour', 1, 3);
+      expect(r.newlyUnlockedAvatars, isEmpty);
     });
   });
 

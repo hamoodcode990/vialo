@@ -2,6 +2,7 @@
 // and lands on the home screen with the header bar and all four duel-mode
 // tiles visible.
 import 'package:vialo/main.dart';
+import 'package:vialo/theme/cosmetics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -95,5 +96,28 @@ void main() {
     await tester.pump();
 
     expect(find.text('Locked — clear the level before it first'), findsWidgets);
+  });
+
+  testWidgets('avatar picker shows 3 unlocked + 5 locked avatars, and a locked tap explains why', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({'vialo_profile_v1': '{"onboarded":true}'});
+    await tester.pumpWidget(const ProviderScope(child: VialoApp()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 2600));
+
+    await tester.tap(find.byType(AvatarGlyph).first); // header avatar -> Profile
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('AVATAR'), findsOneWidget);
+    // 8 avatars total in the picker grid — Profile itself has no header
+    // chip, and the Home screen underneath is fully covered so its own
+    // AvatarGlyph isn't part of what a finder sees here.
+    expect(find.byType(AvatarGlyph), findsNWidgets(8));
+    // 5 of the 8 are level-gated on a fresh profile (only level 1 cleared-frontier).
+    expect(find.byIcon(Icons.lock_rounded), findsNWidgets(5));
+
+    await tester.tap(find.byIcon(Icons.lock_rounded).first);
+    await tester.pump();
+    expect(find.textContaining('Unlocks at Solo level'), findsOneWidget);
   });
 }

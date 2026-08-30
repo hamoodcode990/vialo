@@ -1,35 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../profile/avatar_unlocks.dart';
+
 /// Avatar and background cosmetics.
 ///
-/// Avatars: 8 placeholder icons (flat vector, icon-on-gradient-tile),
-/// shipped as self-contained SVGs under assets/avatars/ — the tile
-/// background, gradient, and glyph are all baked into each file, so
-/// AvatarGlyph just draws the SVG and clips it to match its own rounded-
-/// square art direction. Still functional placeholders, not final art.
+/// Avatars: 8 final mascot characters (bold vector, aggressive/competitive
+/// style, dark neon-alchemy palette matching the app's own theme), shipped
+/// as self-contained SVGs under assets/avatars/ — the tile background,
+/// outline, and glyph are all baked into each file, so AvatarGlyph just
+/// draws the SVG and clips it to match its own rounded-square art
+/// direction. 3 are available from the start; the rest unlock at Solo
+/// level milestones — see [unlockLevel] / avatar_unlocks.dart — this is
+/// cosmetic/profile only and never gates any duel mode or difficulty.
 ///
 /// Backgrounds are a hue-rotate on the animated gradient rather than
 /// separate art, ported from decant.html's BGSKINS array.
 class AvatarOption {
   final String id;
   final String asset;
-  const AvatarOption(this.id, this.asset);
+
+  /// Solo level at which this becomes available; 1 = starting roster.
+  final int unlockLevel;
+
+  AvatarOption(this.id, this.asset) : unlockLevel = unlockLevelFor(id);
 }
 
-const List<AvatarOption> kAvatars = [
-  AvatarOption('drop_blue', 'assets/avatars/drop_blue.svg'),
-  AvatarOption('drop_pink', 'assets/avatars/drop_pink.svg'),
-  AvatarOption('star_gold', 'assets/avatars/star_gold.svg'),
-  AvatarOption('leaf_green', 'assets/avatars/leaf_green.svg'),
-  AvatarOption('bolt_purple', 'assets/avatars/bolt_purple.svg'),
-  AvatarOption('flame_orange', 'assets/avatars/flame_orange.svg'),
-  AvatarOption('moon_teal', 'assets/avatars/moon_teal.svg'),
-  AvatarOption('heart_red', 'assets/avatars/heart_red.svg'),
+final List<AvatarOption> kAvatars = [
+  // Starting roster — available from level 1, no unlock needed.
+  AvatarOption('emerald_shard', 'assets/avatars/emerald_shard.svg'),
+  AvatarOption('rose_fang', 'assets/avatars/rose_fang.svg'),
+  AvatarOption('cyan_blitz', 'assets/avatars/cyan_blitz.svg'),
+  // Level-gated — see avatar_unlocks.dart for the exact milestones (snapped
+  // to Solo's chapter-start boundaries).
+  AvatarOption('gold_fury', 'assets/avatars/gold_fury.svg'),
+  AvatarOption('indigo_titan', 'assets/avatars/indigo_titan.svg'),
+  AvatarOption('violet_void', 'assets/avatars/violet_void.svg'),
+  AvatarOption('coral_rage', 'assets/avatars/coral_rage.svg'),
+  AvatarOption('lime_venom', 'assets/avatars/lime_venom.svg'),
 ];
 
 AvatarOption avatarById(String id) =>
     kAvatars.firstWhere((a) => a.id == id, orElse: () => kAvatars.first);
+
+/// "gold_fury" -> "Gold Fury" — every avatar id is already a clean
+/// snake_case name, so title-casing it is all display copy needs.
+String avatarDisplayName(String id) =>
+    id.split('_').map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}').join(' ');
 
 /// A background skin: [hueDegrees] rotates the animated brand-wash gradient,
 /// mirroring the HTML's `hue-rotate()` CSS filter approach.
@@ -54,8 +71,8 @@ BackgroundSkin backgroundSkinById(String id) => kBackgroundSkins.firstWhere(
 
 /// Avatar tile rendering, shared by the header chip and the profile picker
 /// grid so both stay pixel-for-pixel consistent. The SVG art is already a
-/// rounded square (rx 44 on a 200x200 canvas — a ~0.22 corner ratio), so
-/// this clips to that same ratio rather than forcing a circle.
+/// rounded square (rx 36 on a 200x200 canvas, inset 4px — a ~0.18 corner
+/// ratio), so this clips to that same ratio rather than forcing a circle.
 class AvatarGlyph extends StatelessWidget {
   final AvatarOption avatar;
   final double size;
@@ -65,7 +82,7 @@ class AvatarGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = size * 0.22;
+    final radius = size * 0.18;
     return Container(
       width: size,
       height: size,

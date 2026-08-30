@@ -1,3 +1,4 @@
+import 'avatar_unlocks.dart';
 import 'daily_challenge.dart';
 import 'duel_stats.dart';
 import 'level_counts.dart';
@@ -57,7 +58,7 @@ class PlayerProfile {
 
   PlayerProfile({
     this.name = 'Player',
-    this.avatarId = 'drop_blue',
+    this.avatarId = 'emerald_shard',
     this.lives = lifeMax,
     int? livesUpdatedAt,
     this.coins = 100,
@@ -154,24 +155,48 @@ class PlayerProfile {
   /// Records a level win: keeps the best star rating for that level, bumps
   /// [levelProgress] if this was the unlock frontier, and awards
   /// `10 + 5*stars` coins. Mirrors the shared shape of decant.html's
-  /// `tapSolo` win branch and duel `finish()` level-run branch. Returns the
-  /// number of coins awarded.
-  int recordLevelWin(String mode, int levelNumber, int starsEarned) {
+  /// `tapSolo` win branch and duel `finish()` level-run branch.
+  ///
+  /// For Solo specifically, also detects any avatar-unlock milestones the
+  /// new frontier just crossed (avatar_unlocks.dart) — [levelProgress]
+  /// only ever advances by exactly one level per call (the `next > maxLevel`
+  /// clamp aside), so each threshold is crossed exactly once in a player's
+  /// progression, never re-triggered on a replay of an already-cleared
+  /// level (which doesn't move the frontier at all). Avatar unlock state
+  /// isn't stored separately — it's a derived function of
+  /// `levelProgress['solo']`, so there's nothing extra to persist or desync.
+  ({int coinsEarned, List<String> newlyUnlockedAvatars}) recordLevelWin(
+    String mode,
+    int levelNumber,
+    int starsEarned,
+  ) {
     final byLevel = stars.putIfAbsent(mode, () => <String, int>{});
     final key = levelNumber.toString();
     final prev = byLevel[key] ?? 0;
     byLevel[key] = starsEarned > prev ? starsEarned : prev;
 
-    final progress = levelProgress[mode] ?? 1;
-    if (levelNumber == progress) {
+    final oldProgress = levelProgress[mode] ?? 1;
+    var newProgress = oldProgress;
+    if (levelNumber == oldProgress) {
       final maxLevel = kLevelCounts[mode] ?? levelNumber;
       final next = levelNumber + 1;
-      levelProgress[mode] = next > maxLevel ? maxLevel : next;
+      newProgress = next > maxLevel ? maxLevel : next;
+      levelProgress[mode] = newProgress;
     }
 
     final coinsEarned = 10 + 5 * starsEarned;
     addCoins(coinsEarned);
-    return coinsEarned;
+
+    final newlyUnlocked = <String>[];
+    if (mode == 'solo' && newProgress > oldProgress) {
+      for (final entry in kAvatarUnlockLevels.entries) {
+        if (entry.value > oldProgress && entry.value <= newProgress) {
+          newlyUnlocked.add(entry.key);
+        }
+      }
+    }
+
+    return (coinsEarned: coinsEarned, newlyUnlockedAvatars: newlyUnlocked);
   }
 
   // ---- duel stats ----------------------------------------------------------
@@ -209,7 +234,7 @@ class PlayerProfile {
 
   factory PlayerProfile.fromJson(Map<String, dynamic> json) => PlayerProfile(
         name: json['name'] as String? ?? 'Player',
-        avatarId: json['avatarId'] as String? ?? 'drop_blue',
+        avatarId: json['avatarId'] as String? ?? 'emerald_shard',
         lives: json['lives'] as int? ?? lifeMax,
         livesUpdatedAt: json['livesUpdatedAt'] as int?,
         coins: json['coins'] as int? ?? 100,
