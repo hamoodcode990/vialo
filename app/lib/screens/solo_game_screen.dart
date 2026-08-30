@@ -10,6 +10,7 @@ import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/tube_palettes.dart';
 import '../widgets/game_result_panel.dart';
+import '../widgets/pour_flight_overlay.dart';
 import '../widgets/tube_view.dart';
 
 /// Solo sort: a single-player board with a free undo, paid extra undos, and
@@ -19,7 +20,12 @@ class SoloGameScreen extends ConsumerStatefulWidget {
   final int shuffleColors;
   final bool isDaily;
 
-  const SoloGameScreen({super.key, this.levelNumber, this.shuffleColors = 6, this.isDaily = false});
+  const SoloGameScreen({
+    super.key,
+    this.levelNumber,
+    this.shuffleColors = 6,
+    this.isDaily = false,
+  });
 
   @override
   ConsumerState<SoloGameScreen> createState() => _SoloGameScreenState();
@@ -36,13 +42,20 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
   int? starsEarned;
   int? coinsEarned;
   bool _lifeSpent = false;
+  bool animating = false;
+
+  final GlobalKey _boardKey = GlobalKey();
+  final GlobalKey<PourFlightOverlayState> _flightKey = GlobalKey();
+  List<GlobalKey> _tubeKeys = [];
 
   @override
   void initState() {
     super.initState();
     _initBoard();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted && _startedAt != null && !board.done && !board.failed) setState(() {});
+      if (mounted && _startedAt != null && !board.done && !board.failed) {
+        setState(() {});
+      }
     });
   }
 
@@ -66,11 +79,14 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
       colors = cfg.colors;
       empty = cfg.empty;
     } else {
-      seed = (DateTime.now().millisecondsSinceEpoch % 900000) + math.Random().nextInt(999);
+      seed =
+          (DateTime.now().millisecondsSinceEpoch % 900000) +
+          math.Random().nextInt(999);
       colors = widget.shuffleColors;
       empty = 2;
     }
     board = SoloBoard(seed: seed, colors: colors, empty: empty);
+    _tubeKeys = List.generate(board.tubes.length, (_) => GlobalKey());
     _startedAt = null;
     starsEarned = null;
     coinsEarned = null;
@@ -78,7 +94,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
   }
 
   void _tap(int i) {
-    if (board.done || board.failed) return;
+    if (board.done || board.failed || animating) return;
     if (selected == null) {
       if (board.tubes[i].isEmpty) return;
       selected = i;
@@ -100,12 +116,57 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
     _startedAt ??= DateTime.now();
     final s = selected!;
     setState(() => selected = null);
-    board.pour(s, i);
+    _startPour(s, i);
+  }
+
+  /// Plays the flying-droplet animation (Step 5) then commits the actual
+  /// pour once the last drop lands — see DuelTubeGameScreen's twin of this
+  /// for the full rationale (mirrors decant.html's animPour-then-act
+  /// ordering). Falls back to an immediate pour if rects aren't measurable.
+  void _startPour(int s, int d) {
+    final srcTube = board.tubes[s];
+    final col = srcTube.last;
+    var n = 0, k = srcTube.length - 1;
+    while (k >= 0 && srcTube[k] == col && (board.tubes[d].length + n) < kCap) {
+      n++;
+      k--;
+    }
+    final boardBox = _boardKey.currentContext?.findRenderObject() as RenderBox?;
+    final srcBox =
+        _tubeKeys[s].currentContext?.findRenderObject() as RenderBox?;
+    final dstBox =
+        _tubeKeys[d].currentContext?.findRenderObject() as RenderBox?;
+    if (n == 0 || boardBox == null || srcBox == null || dstBox == null) {
+      _commitPour(s, d);
+      return;
+    }
+    final srcRect =
+        srcBox.localToGlobal(Offset.zero, ancestor: boardBox) & srcBox.size;
+    final dstRect =
+        dstBox.localToGlobal(Offset.zero, ancestor: boardBox) & dstBox.size;
+    final palette = tubePaletteById(ref.read(profileProvider).paletteId);
+    setState(() => animating = true);
+    _flightKey.currentState!.playPour(
+      from: srcRect,
+      to: dstRect,
+      color: palette[col],
+      count: n,
+      onDone: () {
+        if (!mounted) return;
+        setState(() => animating = false);
+        _commitPour(s, d);
+      },
+    );
+  }
+
+  void _commitPour(int s, int d) {
+    board.pour(s, d);
     if (board.done) {
       _onSolved();
     } else if (board.failed) {
       _onFailed();
     }
+    if (!mounted) return;
     setState(() {});
   }
 
@@ -116,14 +177,22 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
     }
     if (widget.levelNumber == null) return; // Shuffle: no economy hooks
     final par = soloPar(board.colors, board.empty);
-    final stars = soloStars(usedHint: board.usedHint, moves: board.moves, par: par);
-    final earned = ref.read(profileControllerProvider.notifier).recordLevelWin('solo', widget.levelNumber!, stars);
+    final stars = soloStars(
+      usedHint: board.usedHint,
+      moves: board.moves,
+      par: par,
+    );
+    final earned = ref
+        .read(profileControllerProvider.notifier)
+        .recordLevelWin('solo', widget.levelNumber!, stars);
     starsEarned = stars;
     coinsEarned = earned;
   }
 
   void _onFailed() {
-    if (widget.isDaily || widget.levelNumber == null) return; // no lives cost for daily/shuffle
+    if (widget.isDaily || widget.levelNumber == null) {
+      return; // no lives cost for daily/shuffle
+    }
     if (!_lifeSpent) {
       ref.read(profileControllerProvider.notifier).loseLife();
       _lifeSpent = true;
@@ -131,7 +200,11 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
   }
 
   void _restart({bool chargeIfUnsolved = false}) {
-    if (chargeIfUnsolved && !widget.isDaily && widget.levelNumber != null && !board.done && !board.failed) {
+    if (chargeIfUnsolved &&
+        !widget.isDaily &&
+        widget.levelNumber != null &&
+        !board.done &&
+        !board.failed) {
       ref.read(profileControllerProvider.notifier).loseLife();
     }
     setState(_initBoard);
@@ -176,11 +249,18 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
       _toast('Not enough coins');
       return;
     }
-    setState(board.addTube);
+    setState(() {
+      board.addTube();
+      while (_tubeKeys.length < board.tubes.length) {
+        _tubeKeys.add(GlobalKey());
+      }
+    });
   }
 
   void _toast(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), duration: const Duration(seconds: 2)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
+    );
   }
 
   double _tubeWidth(double avail, int n) {
@@ -194,12 +274,22 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
     final profile = ref.watch(profileProvider);
     final palette = tubePaletteById(profile.paletteId);
     Color colorOf(int idx) => palette[idx];
-    final secs = _startedAt == null ? 0 : DateTime.now().difference(_startedAt!).inSeconds;
-    final solvedCount = board.tubes.where((t) => t.length == kCap && t.every((v) => v == t[0])).length;
+    final secs = _startedAt == null
+        ? 0
+        : DateTime.now().difference(_startedAt!).inSeconds;
+    final solvedCount = board.tubes
+        .where((t) => t.length == kCap && t.every((v) => v == t[0]))
+        .length;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isDaily ? "Today's Pour" : (widget.levelNumber != null ? 'Level ${widget.levelNumber}' : 'Solo sort')),
+        title: Text(
+          widget.isDaily
+              ? "Today's Pour"
+              : (widget.levelNumber != null
+                    ? 'Level ${widget.levelNumber}'
+                    : 'Solo sort'),
+        ),
         actions: [
           IconButton(
             onPressed: board.canUndo ? _undo : null,
@@ -217,13 +307,28 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _Stat(label: 'TIME', value: '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}'),
-                  _Stat(label: 'MOVES', value: '${board.moves}', alignCenter: true),
-                  _Stat(label: 'SOLVED', value: '$solvedCount/${board.colors}', alignRight: true),
+                  _Stat(
+                    label: 'TIME',
+                    value:
+                        '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}',
+                  ),
+                  _Stat(
+                    label: 'MOVES',
+                    value: '${board.moves}',
+                    alignCenter: true,
+                  ),
+                  _Stat(
+                    label: 'SOLVED',
+                    value: '$solvedCount/${board.colors}',
+                    alignRight: true,
+                  ),
                 ],
               ),
             ),
@@ -231,48 +336,84 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
               child: Center(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final w = _tubeWidth(constraints.maxWidth, board.tubes.length);
-                    return SingleChildScrollView(
-                      child: Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.end,
-                        spacing: 7,
-                        runSpacing: 14,
-                        children: [
-                          for (var i = 0; i < board.tubes.length; i++)
-                            TubeView(
-                              width: w,
-                              capacity: kCap,
-                              contents: board.tubes[i],
-                              colorOf: colorOf,
-                              selected: selected == i,
-                              isTarget: (selected != null && board.legal(selected!, i)) || (hint != null && (hint!.$1 == i || hint!.$2 == i)),
-                              dimmed: selected != null && selected != i && !board.legal(selected!, i),
-                              shakeTrigger: shakeTube == i ? shakeTrigger : 0,
-                              onTap: () => _tap(i),
-                            ),
-                        ],
-                      ),
+                    final w = _tubeWidth(
+                      constraints.maxWidth,
+                      board.tubes.length,
+                    );
+                    return Stack(
+                      key: _boardKey,
+                      clipBehavior: Clip.none,
+                      children: [
+                        SingleChildScrollView(
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.end,
+                            spacing: 7,
+                            runSpacing: 14,
+                            children: [
+                              for (var i = 0; i < board.tubes.length; i++)
+                                TubeView(
+                                  key: _tubeKeys[i],
+                                  width: w,
+                                  capacity: kCap,
+                                  contents: board.tubes[i],
+                                  colorOf: colorOf,
+                                  selected: selected == i,
+                                  isTarget:
+                                      (selected != null &&
+                                          board.legal(selected!, i)) ||
+                                      (hint != null &&
+                                          (hint!.$1 == i || hint!.$2 == i)),
+                                  dimmed:
+                                      selected != null &&
+                                      selected != i &&
+                                      !board.legal(selected!, i),
+                                  shakeTrigger: shakeTube == i
+                                      ? shakeTrigger
+                                      : 0,
+                                  onTap: () => _tap(i),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: PourFlightOverlay(key: _flightKey),
+                          ),
+                        ),
+                      ],
                     );
                   },
                 ),
               ),
             ),
             if (board.done || board.failed)
-              Padding(padding: const EdgeInsets.only(bottom: AppSpacing.lg), child: _buildResult(context, secs))
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                child: _buildResult(context, secs),
+              )
             else
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.xl),
                 child: Column(
                   children: [
-                    const Text('Tap to lift · tap again to pour', style: TextStyle(fontSize: 12, color: AppColors.mute)),
+                    const Text(
+                      'Tap to lift · tap again to pour',
+                      style: TextStyle(fontSize: 12, color: AppColors.mute),
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _HintChip(label: '💡 Reveal move · 40🪙', onTap: _revealHint),
+                        _HintChip(
+                          label: '💡 Reveal move · 40🪙',
+                          onTap: _revealHint,
+                        ),
                         const SizedBox(width: AppSpacing.sm),
-                        _HintChip(label: '🧪 Add tube · 60🪙', onTap: _addTubeHint),
+                        _HintChip(
+                          label: '🧪 Add tube · 60🪙',
+                          onTap: _addTubeHint,
+                        ),
                       ],
                     ),
                   ],
@@ -289,12 +430,20 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
       final timeStr = '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}';
       final List<Widget> actions;
       if (widget.isDaily) {
-        actions = [primaryAction('Done', () => Navigator.of(context).popUntil((r) => r.isFirst))];
+        actions = [
+          primaryAction(
+            'Done',
+            () => Navigator.of(context).popUntil((r) => r.isFirst),
+          ),
+        ];
       } else if (widget.levelNumber != null) {
         actions = [
           primaryAction('Next level', () {
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => SoloGameScreen(levelNumber: widget.levelNumber! + 1)),
+              MaterialPageRoute(
+                builder: (_) =>
+                    SoloGameScreen(levelNumber: widget.levelNumber! + 1),
+              ),
             );
           }),
           secondaryAction('Levels', () => Navigator.of(context).pop()),
@@ -302,13 +451,18 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
       } else {
         actions = [
           primaryAction('Next board', () => setState(_initBoard)),
-          secondaryAction('Menu', () => Navigator.of(context).popUntil((r) => r.isFirst)),
+          secondaryAction(
+            'Menu',
+            () => Navigator.of(context).popUntil((r) => r.isFirst),
+          ),
         ];
       }
       return GameResultPanel(
         title: widget.isDaily ? 'Solved for today' : 'Solved',
         color: AppColors.p1,
-        stars: (!widget.isDaily && widget.levelNumber != null) ? starsEarned : null,
+        stars: (!widget.isDaily && widget.levelNumber != null)
+            ? starsEarned
+            : null,
         subtitle: widget.isDaily
             ? '$timeStr · ${board.moves} moves · 🔥 streak +1 · +50 coins'
             : '$timeStr · ${board.moves} moves${coinsEarned != null ? ' · +$coinsEarned coins' : ''}',
@@ -318,12 +472,31 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
     return GameResultPanel(
       title: 'No moves left',
       color: AppColors.hot,
-      subtitle: (!widget.isDaily && widget.levelNumber != null) ? 'This attempt cost a life.' : 'This board is stuck — try another.',
+      subtitle: (!widget.isDaily && widget.levelNumber != null)
+          ? 'This attempt cost a life.'
+          : 'This board is stuck — try another.',
       actions: widget.isDaily
-          ? [primaryAction('Menu', () => Navigator.of(context).popUntil((r) => r.isFirst))]
+          ? [
+              primaryAction(
+                'Menu',
+                () => Navigator.of(context).popUntil((r) => r.isFirst),
+              ),
+            ]
           : (widget.levelNumber != null
-              ? [primaryAction('Retry', () => setState(_initBoard)), secondaryAction('Levels', () => Navigator.of(context).pop())]
-              : [primaryAction('New board', () => setState(_initBoard)), secondaryAction('Menu', () => Navigator.of(context).popUntil((r) => r.isFirst))]),
+                ? [
+                    primaryAction('Retry', () => setState(_initBoard)),
+                    secondaryAction(
+                      'Levels',
+                      () => Navigator.of(context).pop(),
+                    ),
+                  ]
+                : [
+                    primaryAction('New board', () => setState(_initBoard)),
+                    secondaryAction(
+                      'Menu',
+                      () => Navigator.of(context).popUntil((r) => r.isFirst),
+                    ),
+                  ]),
     );
   }
 }
@@ -333,15 +506,33 @@ class _Stat extends StatelessWidget {
   final String value;
   final bool alignCenter;
   final bool alignRight;
-  const _Stat({required this.label, required this.value, this.alignCenter = false, this.alignRight = false});
+  const _Stat({
+    required this.label,
+    required this.value,
+    this.alignCenter = false,
+    this.alignRight = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: alignCenter ? CrossAxisAlignment.center : (alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start),
+      crossAxisAlignment: alignCenter
+          ? CrossAxisAlignment.center
+          : (alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start),
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, letterSpacing: 0.6, fontWeight: FontWeight.w700, color: AppColors.mute)),
-        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            letterSpacing: 0.6,
+            fontWeight: FontWeight.w700,
+            color: AppColors.mute,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+        ),
       ],
     );
   }
@@ -363,7 +554,10 @@ class _HintChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(13),
           border: Border.all(color: AppColors.edge),
         ),
-        child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+        ),
       ),
     );
   }

@@ -42,11 +42,43 @@ class TubeView extends StatefulWidget {
   State<TubeView> createState() => _TubeViewState();
 }
 
-class _TubeViewState extends State<TubeView> with SingleTickerProviderStateMixin {
+class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
   late final AnimationController _shakeCtrl = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 320),
   );
+
+  // Squash-and-stretch settle (CLAUDE.md Step 5) whenever this tube's
+  // contents change — covers both the destination landing a pour and the
+  // source tube being disturbed by one, with no extra wiring from callers:
+  // TubeView just reacts to its own contents diffing on rebuild.
+  late final AnimationController _settleCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 260),
+  );
+  static final Animatable<double> _settleTween = TweenSequence([
+    TweenSequenceItem(
+      tween: Tween(
+        begin: 1.0,
+        end: 0.88,
+      ).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 30,
+    ),
+    TweenSequenceItem(
+      tween: Tween(
+        begin: 0.88,
+        end: 1.05,
+      ).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 35,
+    ),
+    TweenSequenceItem(
+      tween: Tween(
+        begin: 1.05,
+        end: 1.0,
+      ).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 35,
+    ),
+  ]);
 
   @override
   void didUpdateWidget(TubeView old) {
@@ -54,11 +86,23 @@ class _TubeViewState extends State<TubeView> with SingleTickerProviderStateMixin
     if (widget.shakeTrigger != old.shakeTrigger) {
       _shakeCtrl.forward(from: 0);
     }
+    if (!_sameContents(old.contents, widget.contents)) {
+      _settleCtrl.forward(from: 0);
+    }
+  }
+
+  bool _sameContents(List<int> a, List<int> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   @override
   void dispose() {
     _shakeCtrl.dispose();
+    _settleCtrl.dispose();
     super.dispose();
   }
 
@@ -82,7 +126,11 @@ class _TubeViewState extends State<TubeView> with SingleTickerProviderStateMixin
 
     Widget glass = CustomPaint(
       size: Size(widget.width, height),
-      painter: TubePainter(capacity: widget.capacity, segments: segments, sealed: widget.sealed),
+      painter: TubePainter(
+        capacity: widget.capacity,
+        segments: segments,
+        sealed: widget.sealed,
+      ),
     );
 
     glass = Container(
@@ -115,6 +163,20 @@ class _TubeViewState extends State<TubeView> with SingleTickerProviderStateMixin
       ),
     );
 
+    glass = AnimatedBuilder(
+      animation: _settleCtrl,
+      child: glass,
+      builder: (context, child) => Transform(
+        alignment: Alignment.bottomCenter,
+        transform: Matrix4.diagonal3Values(
+          1,
+          _settleTween.evaluate(_settleCtrl),
+          1,
+        ),
+        child: child,
+      ),
+    );
+
     return GestureDetector(
       onTap: widget.onTap,
       child: AnimatedOpacity(
@@ -124,7 +186,9 @@ class _TubeViewState extends State<TubeView> with SingleTickerProviderStateMixin
           animation: _shakeCtrl,
           builder: (context, child) {
             final t = _shakeCtrl.value;
-            final dx = t == 0 || t == 1 ? 0.0 : (7 * (1 - t)) * ((t * 4).floor().isEven ? 1 : -1);
+            final dx = t == 0 || t == 1
+                ? 0.0
+                : (7 * (1 - t)) * ((t * 4).floor().isEven ? 1 : -1);
             return Transform.translate(offset: Offset(dx, 0), child: child);
           },
           child: AnimatedSlide(

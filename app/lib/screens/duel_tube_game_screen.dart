@@ -13,6 +13,7 @@ import '../theme/mode_info.dart';
 import '../theme/spacing.dart';
 import '../theme/tube_palettes.dart';
 import '../widgets/game_result_panel.dart';
+import '../widgets/pour_flight_overlay.dart';
 import '../widgets/tube_view.dart';
 
 const Map<String, int> kBotBonus = {'easy': 25, 'normal': 40, 'hard': 60};
@@ -47,8 +48,13 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
   int shakeTrigger = 0;
   int? shakeTube;
   bool thinking = false;
+  bool animating = false;
   bool finished = false;
   ({bool won, int? stars, int? coins})? levelResult;
+
+  final GlobalKey _boardKey = GlobalKey();
+  final GlobalKey<PourFlightOverlayState> _flightKey = GlobalKey();
+  List<GlobalKey> _tubeKeys = [];
 
   @override
   void initState() {
@@ -63,7 +69,9 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
     if (widget.levelNumber != null) {
       seed = modeSeed(widget.kind, widget.levelNumber!);
     } else {
-      seed = (DateTime.now().millisecondsSinceEpoch % 900000) + math.Random().nextInt(999);
+      seed =
+          (DateTime.now().millisecondsSinceEpoch % 900000) +
+          math.Random().nextInt(999);
     }
 
     switch (widget.kind) {
@@ -92,6 +100,7 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
       default:
         throw ArgumentError('unknown tube kind ${widget.kind}');
     }
+    _tubeKeys = List.generate(engine.tubes.length, (_) => GlobalKey());
   }
 
   List<String> get _names => widget.mode == 'ai'
@@ -101,11 +110,14 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
   bool get _isLevelRun => widget.levelNumber != null;
 
   void _tap(int i) {
-    if (engine.over || thinking) return;
+    if (engine.over || thinking || animating) return;
     if (widget.mode == 'ai' && engine.turn != 0) return;
     if (selected == null) {
       if (engine.tubes[i].isEmpty || engine.sealed[i]) return;
-      final hasTarget = List.generate(engine.tubes.length, (d) => d).any((d) => engine.canAct(i, d));
+      final hasTarget = List.generate(
+        engine.tubes.length,
+        (d) => d,
+      ).any((d) => engine.canAct(i, d));
       if (!hasTarget) {
         setState(() {
           shakeTube = i;
@@ -123,13 +135,53 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
     if (engine.canAct(selected!, i)) {
       final s = selected!;
       setState(() => selected = null);
-      _performMove(s, i);
+      _startPour(s, i);
       return;
     }
     setState(() {
       shakeTube = selected;
       shakeTrigger++;
     });
+  }
+
+  /// Plays the flying-droplet animation (Step 5) from tube [s] to tube [d],
+  /// then commits the actual engine move once the last drop lands — mirrors
+  /// decant.html's animPour-then-act ordering. Falls back to an immediate
+  /// move if the tube rects aren't measurable yet (e.g. a very first frame).
+  void _startPour(int s, int d) {
+    final srcTube = engine.tubes[s];
+    final col = srcTube.last;
+    var n = 0, k = srcTube.length - 1;
+    while (k >= 0 && srcTube[k] == col && (engine.tubes[d].length + n) < kCap) {
+      n++;
+      k--;
+    }
+    final boardBox = _boardKey.currentContext?.findRenderObject() as RenderBox?;
+    final srcBox =
+        _tubeKeys[s].currentContext?.findRenderObject() as RenderBox?;
+    final dstBox =
+        _tubeKeys[d].currentContext?.findRenderObject() as RenderBox?;
+    if (n == 0 || boardBox == null || srcBox == null || dstBox == null) {
+      _performMove(s, d);
+      return;
+    }
+    final srcRect =
+        srcBox.localToGlobal(Offset.zero, ancestor: boardBox) & srcBox.size;
+    final dstRect =
+        dstBox.localToGlobal(Offset.zero, ancestor: boardBox) & dstBox.size;
+    final palette = tubePaletteById(ref.read(profileProvider).paletteId);
+    setState(() => animating = true);
+    _flightKey.currentState!.playPour(
+      from: srcRect,
+      to: dstRect,
+      color: palette[col],
+      count: n,
+      onDone: () {
+        if (!mounted) return;
+        setState(() => animating = false);
+        _performMove(s, d);
+      },
+    );
   }
 
   void _performMove(int s, int d) {
@@ -145,7 +197,9 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
 
   Future<void> _aiTurn() async {
     setState(() => thinking = true);
-    await Future.delayed(Duration(milliseconds: 380 + math.Random().nextInt(340)));
+    await Future.delayed(
+      Duration(milliseconds: 380 + math.Random().nextInt(340)),
+    );
     if (!mounted) return;
     final profile = kAiProfiles[effectiveAiKey]!;
     final rnd = mb32(DateTime.now().millisecondsSinceEpoch & 0xffff);
@@ -156,7 +210,7 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
       if (engine.over) _finish();
       return;
     }
-    _performMove(m.$1, m.$2);
+    _startPour(m.$1, m.$2);
   }
 
   void _finish() {
@@ -180,7 +234,11 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
           oppScore: engine.scores[1],
           colors: engine.colors,
         );
-        final coins = ctrl.recordLevelWin(widget.kind, widget.levelNumber!, stars);
+        final coins = ctrl.recordLevelWin(
+          widget.kind,
+          widget.levelNumber!,
+          stars,
+        );
         levelResult = (won: true, stars: stars, coins: coins);
       } else {
         ctrl.loseLife();
@@ -198,7 +256,9 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
 
   String? _capLabel(int i) {
     if (widget.kind == 'recipe') {
-      if (i >= kRecipeSrc) return i - kRecipeSrc == 0 ? 'YOUR VIAL' : 'THEIR VIAL';
+      if (i >= kRecipeSrc) {
+        return i - kRecipeSrc == 0 ? 'YOUR VIAL' : 'THEIR VIAL';
+      }
       return '';
     }
     if (widget.kind != 'split') return engine.sealed[i] ? '●' : '';
@@ -210,7 +270,9 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
 
   Color? _capColor(int i) {
     if (widget.kind == 'recipe') {
-      if (i >= kRecipeSrc) return i - kRecipeSrc == 0 ? AppColors.p1 : AppColors.p2;
+      if (i >= kRecipeSrc) {
+        return i - kRecipeSrc == 0 ? AppColors.p1 : AppColors.p2;
+      }
       return null;
     }
     if (widget.kind != 'split') return null;
@@ -230,7 +292,11 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isLevelRun ? '${info.name} · Level ${widget.levelNumber}' : info.name),
+        title: Text(
+          _isLevelRun
+              ? '${info.name} · Level ${widget.levelNumber}'
+              : info.name,
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -249,7 +315,12 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
             ),
             if (widget.kind == 'recipe')
               Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 9, AppSpacing.lg, 0),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  9,
+                  AppSpacing.lg,
+                  0,
+                ),
                 child: _RecipeTargets(
                   recipe: engine as Recipe,
                   colorOf: colorOf,
@@ -260,31 +331,53 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
               child: Center(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final w = _tubeWidth(constraints.maxWidth, engine.tubes.length);
-                    return SingleChildScrollView(
-                      child: Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.end,
-                        spacing: 7,
-                        runSpacing: 14,
-                        children: [
-                          for (var i = 0; i < engine.tubes.length; i++)
-                            TubeView(
-                              width: w,
-                              capacity: kCap,
-                              contents: engine.tubes[i],
-                              colorOf: colorOf,
-                              sealed: engine.sealed[i],
-                              selected: selected == i,
-                              isTarget: selected != null && engine.canAct(selected!, i),
-                              dimmed: selected != null && selected != i && !engine.canAct(selected!, i),
-                              capLabel: _capLabel(i),
-                              capColor: _capColor(i),
-                              shakeTrigger: shakeTube == i ? shakeTrigger : 0,
-                              onTap: () => _tap(i),
-                            ),
-                        ],
-                      ),
+                    final w = _tubeWidth(
+                      constraints.maxWidth,
+                      engine.tubes.length,
+                    );
+                    return Stack(
+                      key: _boardKey,
+                      clipBehavior: Clip.none,
+                      children: [
+                        SingleChildScrollView(
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.end,
+                            spacing: 7,
+                            runSpacing: 14,
+                            children: [
+                              for (var i = 0; i < engine.tubes.length; i++)
+                                TubeView(
+                                  key: _tubeKeys[i],
+                                  width: w,
+                                  capacity: kCap,
+                                  contents: engine.tubes[i],
+                                  colorOf: colorOf,
+                                  sealed: engine.sealed[i],
+                                  selected: selected == i,
+                                  isTarget:
+                                      selected != null &&
+                                      engine.canAct(selected!, i),
+                                  dimmed:
+                                      selected != null &&
+                                      selected != i &&
+                                      !engine.canAct(selected!, i),
+                                  capLabel: _capLabel(i),
+                                  capColor: _capColor(i),
+                                  shakeTrigger: shakeTube == i
+                                      ? shakeTrigger
+                                      : 0,
+                                  onTap: () => _tap(i),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: PourFlightOverlay(key: _flightKey),
+                          ),
+                        ),
+                      ],
                     );
                   },
                 ),
@@ -299,9 +392,15 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.xl),
                 child: Text(
-                  thinking ? '${names[1]} is thinking…' : (widget.mode == 'ai' ? 'Your move' : "${names[engine.turn]} — your move"),
+                  thinking
+                      ? '${names[1]} is thinking…'
+                      : (widget.mode == 'ai'
+                            ? 'Your move'
+                            : "${names[engine.turn]} — your move"),
                   style: TextStyle(
-                    color: thinking ? AppColors.p2 : (engine.turn == 0 ? AppColors.p1 : AppColors.p2),
+                    color: thinking
+                        ? AppColors.p2
+                        : (engine.turn == 0 ? AppColors.p1 : AppColors.p2),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -320,7 +419,8 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
       return GameResultPanel(
         title: r.won ? 'Level cleared' : 'Level lost',
         color: r.won ? AppColors.p1 : AppColors.hot,
-        subtitle: '${engine.scores[0]} — ${engine.scores[1]} · $why${r.won ? ' · +${r.coins} coins' : ' · −1 life'}',
+        subtitle:
+            '${engine.scores[0]} — ${engine.scores[1]} · $why${r.won ? ' · +${r.coins} coins' : ' · −1 life'}',
         stars: r.won ? r.stars : null,
         actions: [
           if (!r.won) primaryAction('Retry', () => _restart(sameLevel: true)),
@@ -328,15 +428,23 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
         ],
       );
     }
-    final title = widget.mode == 'ai' ? (l == 0 ? 'You win' : (l == 1 ? 'You lose' : 'Draw')) : (l == -1 ? 'Draw' : '${names[l]} wins');
-    final color = l == 0 ? AppColors.p1 : (l == 1 ? AppColors.p2 : AppColors.mute);
+    final title = widget.mode == 'ai'
+        ? (l == 0 ? 'You win' : (l == 1 ? 'You lose' : 'Draw'))
+        : (l == -1 ? 'Draw' : '${names[l]} wins');
+    final color = l == 0
+        ? AppColors.p1
+        : (l == 1 ? AppColors.p2 : AppColors.mute);
     return GameResultPanel(
       title: title,
       color: color,
-      subtitle: '${engine.scores[0]} — ${engine.scores[1]}${engine.komi ? ' (½ to second player)' : ''} · $why',
+      subtitle:
+          '${engine.scores[0]} — ${engine.scores[1]}${engine.komi ? ' (½ to second player)' : ''} · $why',
       actions: [
         primaryAction('Rematch', () => _restart(sameLevel: false)),
-        secondaryAction('Menu', () => Navigator.of(context).popUntil((r) => r.isFirst)),
+        secondaryAction(
+          'Menu',
+          () => Navigator.of(context).popUntil((r) => r.isFirst),
+        ),
       ],
     );
   }
@@ -417,12 +525,20 @@ class _FormulaRow extends StatelessWidget {
           width: 100,
           child: Text(
             label,
-            style: TextStyle(fontSize: 8.5, letterSpacing: 0.7, fontWeight: FontWeight.w800, color: labelColor),
+            style: TextStyle(
+              fontSize: 8.5,
+              letterSpacing: 0.7,
+              fontWeight: FontWeight.w800,
+              color: labelColor,
+            ),
           ),
         ),
         for (var i = 0; i < recipe.length; i++) ...[
           if (i > 0) const SizedBox(width: 6),
-          _FormulaChip(on: i < filled, color: reveal ? colorOf(recipe[i]) : null),
+          _FormulaChip(
+            on: i < filled,
+            color: reveal ? colorOf(recipe[i]) : null,
+          ),
         ],
       ],
     );
@@ -431,7 +547,8 @@ class _FormulaRow extends StatelessWidget {
 
 class _FormulaChip extends StatelessWidget {
   final bool on;
-  final Color? color; // non-null = "mine" (colour revealed); null = "theirs" (progress only)
+  final Color?
+  color; // non-null = "mine" (colour revealed); null = "theirs" (progress only)
 
   const _FormulaChip({required this.on, required this.color});
 
@@ -453,7 +570,10 @@ class _FormulaChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: on ? AppColors.mute : Colors.transparent,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: on ? AppColors.mute : AppColors.edge, width: 1.5),
+        border: Border.all(
+          color: on ? AppColors.mute : AppColors.edge,
+          width: 1.5,
+        ),
       ),
     );
   }
@@ -490,19 +610,38 @@ class _ScoreRow extends StatelessWidget {
           children: [
             Opacity(
               opacity: turn == 0 && !over ? 1 : 0.35,
-              child: _PlayerScore(name: names[0], score: scores[0], color: AppColors.p1),
+              child: _PlayerScore(
+                name: names[0],
+                score: scores[0],
+                color: AppColors.p1,
+              ),
             ),
             Expanded(
               child: Column(
                 children: [
-                  Text('$claimed/$total', style: const TextStyle(fontWeight: FontWeight.w700)),
-                  Text(label, style: const TextStyle(fontSize: 8.5, letterSpacing: 1.4, color: AppColors.mute)),
+                  Text(
+                    '$claimed/$total',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 8.5,
+                      letterSpacing: 1.4,
+                      color: AppColors.mute,
+                    ),
+                  ),
                 ],
               ),
             ),
             Opacity(
               opacity: turn == 1 && !over ? 1 : 0.35,
-              child: _PlayerScore(name: names[1], score: scores[1], color: AppColors.p2, alignRight: true),
+              child: _PlayerScore(
+                name: names[1],
+                score: scores[1],
+                color: AppColors.p2,
+                alignRight: true,
+              ),
             ),
           ],
         ),
@@ -513,9 +652,18 @@ class _ScoreRow extends StatelessWidget {
             height: 4,
             child: Row(
               children: [
-                Expanded(flex: f0, child: Container(color: AppColors.p1)),
-                Expanded(flex: fm, child: Container(color: AppColors.edge)),
-                Expanded(flex: f1, child: Container(color: AppColors.p2)),
+                Expanded(
+                  flex: f0,
+                  child: Container(color: AppColors.p1),
+                ),
+                Expanded(
+                  flex: fm,
+                  child: Container(color: AppColors.edge),
+                ),
+                Expanded(
+                  flex: f1,
+                  child: Container(color: AppColors.p2),
+                ),
               ],
             ),
           ),
@@ -530,15 +678,36 @@ class _PlayerScore extends StatelessWidget {
   final int score;
   final Color color;
   final bool alignRight;
-  const _PlayerScore({required this.name, required this.score, required this.color, this.alignRight = false});
+  const _PlayerScore({
+    required this.name,
+    required this.score,
+    required this.color,
+    this.alignRight = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: alignRight
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
-        Text(name, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color)),
-        Text('$score', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: color)),
+        Text(
+          name,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+        Text(
+          '$score',
+          style: TextStyle(
+            fontSize: 30,
+            fontWeight: FontWeight.w900,
+            color: color,
+          ),
+        ),
       ],
     );
   }
