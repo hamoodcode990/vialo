@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart' hide Split;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../audio/audio_controller.dart';
 import '../game/game.dart';
 import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
@@ -61,6 +62,15 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
     super.initState();
     _initGame();
     if (widget.mode == 'ai' && engine.turn == 1) _aiTurn();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(audioControllerProvider).playGameMusic();
+    });
+  }
+
+  @override
+  void dispose() {
+    ref.read(audioControllerProvider).playMenuMusic();
+    super.dispose();
   }
 
   void _initGame() {
@@ -119,12 +129,14 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
         (d) => d,
       ).any((d) => engine.canAct(i, d));
       if (!hasTarget) {
+        ref.read(audioControllerProvider).invalidMove();
         setState(() {
           shakeTube = i;
           shakeTrigger++;
         });
         return;
       }
+      ref.read(audioControllerProvider).pick();
       setState(() => selected = i);
       return;
     }
@@ -138,6 +150,7 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
       _startPour(s, i);
       return;
     }
+    ref.read(audioControllerProvider).invalidMove();
     setState(() {
       shakeTube = selected;
       shakeTrigger++;
@@ -171,6 +184,14 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
         dstBox.localToGlobal(Offset.zero, ancestor: boardBox) & dstBox.size;
     final palette = tubePaletteById(ref.read(profileProvider).paletteId);
     setState(() => animating = true);
+    final audio = ref.read(audioControllerProvider);
+    // Matches PourFlightOverlay's own timing exactly (72ms stagger, splash
+    // at rise+land = 475ms after each drop starts) so the SFX lands with
+    // the visual, same as decant.html's setTimeout(...,i*72) + SFX.drip/splash.
+    for (var i = 0; i < n; i++) {
+      Future.delayed(Duration(milliseconds: i * 72), () => audio.pourDrip(i));
+      Future.delayed(Duration(milliseconds: i * 72 + 475), audio.splash);
+    }
     _flightKey.currentState!.playPour(
       from: srcRect,
       to: dstRect,
@@ -185,7 +206,8 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
   }
 
   void _performMove(int s, int d) {
-    engine.act(s, d);
+    final result = engine.act(s, d);
+    if (result?.sealed != null) ref.read(audioControllerProvider).claim();
     if (!mounted) return;
     setState(() {});
     if (engine.over) {
@@ -217,11 +239,16 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
     if (finished) return;
     finished = true;
     final ctrl = ref.read(profileControllerProvider.notifier);
+    final audio = ref.read(audioControllerProvider);
     final won = widget.mode == 'ai' && engine.leader == 0;
 
     if (widget.mode == 'ai') {
+      won ? audio.levelWin() : audio.levelLose();
       ctrl.recordAiResult(widget.kind, won, engine.scores[0]);
-      if (won) ctrl.addCoins(kBotBonus[effectiveAiKey] ?? 0);
+      if (won) {
+        ctrl.addCoins(kBotBonus[effectiveAiKey] ?? 0);
+        audio.coinGain();
+      }
     } else {
       ctrl.recordPassPlay();
     }
@@ -239,6 +266,7 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
           widget.levelNumber!,
           stars,
         );
+        audio.coinGain();
         levelResult = (won: true, stars: stars, coins: coins);
       } else {
         ctrl.loseLife();

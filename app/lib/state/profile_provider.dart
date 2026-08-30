@@ -132,6 +132,12 @@ class ProfileController extends AsyncNotifier<PlayerProfile> {
     _commit(p.clone());
   }
 
+  void setMusicMuted(bool musicMuted) {
+    final p = _current;
+    p.musicMuted = musicMuted;
+    _commit(p.clone());
+  }
+
   void setBestOf(int n) {
     final p = _current;
     p.bestOf = n;

@@ -198,6 +198,7 @@ void main() {
       p.paletteId = 'neon';
       p.backgroundId = 'bg2';
       p.muted = true;
+      p.musicMuted = true;
       p.bestOf = 5;
       p.onboarded = true;
       p.appleUserId = 'apple.user.001';
@@ -226,6 +227,7 @@ void main() {
       expect(restored.paletteId, p.paletteId);
       expect(restored.backgroundId, p.backgroundId);
       expect(restored.muted, p.muted);
+      expect(restored.musicMuted, p.musicMuted);
       expect(restored.bestOf, p.bestOf);
       expect(restored.onboarded, p.onboarded);
       expect(restored.appleUserId, p.appleUserId);

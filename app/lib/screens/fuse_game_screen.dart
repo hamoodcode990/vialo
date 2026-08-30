@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../audio/audio_controller.dart';
 import '../game/game.dart';
 import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
@@ -57,6 +58,9 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
     super.initState();
     _initGame();
     if (widget.mode == 'ai' && engine.turn == 1) _aiTurn();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(audioControllerProvider).playGameMusic();
+    });
   }
 
   void _initGame() {
@@ -80,12 +84,14 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
       if (engine.grid[i] == 0 || engine.sealed[i]) return;
       final hasTarget = List.generate(engine.grid.length, (b) => b).any((b) => engine.canAct(i, b));
       if (!hasTarget) {
+        ref.read(audioControllerProvider).invalidMove();
         setState(() {
           shakeCell = i;
           shakeTrigger++;
         });
         return;
       }
+      ref.read(audioControllerProvider).pick();
       setState(() => selected = i);
       return;
     }
@@ -99,6 +105,7 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
       _performMove(s, i);
       return;
     }
+    ref.read(audioControllerProvider).invalidMove();
     setState(() {
       shakeCell = selected!;
       shakeTrigger++;
@@ -113,7 +120,13 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
     });
     await _flyCtrl.forward(from: 0);
     if (!mounted) return;
-    engine.act(a, b);
+    final result = engine.act(a, b);
+    final audio = ref.read(audioControllerProvider);
+    if (result?.sealed != null) {
+      audio.claim();
+    } else if (result?.value != null) {
+      audio.fuseMerge(result!.value!);
+    }
     setState(() => _flying = null);
     if (engine.over) {
       _finish();
@@ -124,6 +137,7 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
 
   @override
   void dispose() {
+    ref.read(audioControllerProvider).playMenuMusic();
     _flyCtrl.dispose();
     super.dispose();
   }
@@ -182,11 +196,16 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
     if (finished) return;
     finished = true;
     final ctrl = ref.read(profileControllerProvider.notifier);
+    final audio = ref.read(audioControllerProvider);
     final won = widget.mode == 'ai' && engine.leader == 0;
 
     if (widget.mode == 'ai') {
+      won ? audio.levelWin() : audio.levelLose();
       ctrl.recordAiResult('fuse', won, engine.scores[0]);
-      if (won) ctrl.addCoins(kBotBonus[effectiveAiKey] ?? 0);
+      if (won) {
+        ctrl.addCoins(kBotBonus[effectiveAiKey] ?? 0);
+        audio.coinGain();
+      }
     } else {
       ctrl.recordPassPlay();
     }
@@ -195,6 +214,7 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen> with SingleTick
       if (won) {
         final stars = duelStars(kind: 'fuse', myScore: engine.scores[0], oppScore: engine.scores[1], colors: 0);
         final coins = ctrl.recordLevelWin('fuse', widget.levelNumber!, stars);
+        audio.coinGain();
         levelResult = (won: true, stars: stars, coins: coins);
       } else {
         ctrl.loseLife();

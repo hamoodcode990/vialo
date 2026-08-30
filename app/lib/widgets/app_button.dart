@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../audio/audio_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 
@@ -7,7 +9,11 @@ enum AppButtonStyle { primary, secondary, ghost, gold, violet }
 
 /// Chunky, beveled, tappable button — port of decant.html's `.go`/`.gh`/
 /// `.buy` button treatment (thick radius, layered shadow, scale-down press).
-class AppButton extends StatefulWidget {
+/// Every tap plays the shared "button tap" SFX (CLAUDE.md Step 9) — this is
+/// the one shared widget every screen's buttons already go through, so it's
+/// the single place that covers the whole app rather than wiring it at
+/// every call site.
+class AppButton extends ConsumerStatefulWidget {
   final String label;
   final VoidCallback? onPressed;
   final AppButtonStyle style;
@@ -22,11 +28,16 @@ class AppButton extends StatefulWidget {
   });
 
   @override
-  State<AppButton> createState() => _AppButtonState();
+  ConsumerState<AppButton> createState() => _AppButtonState();
 }
 
-class _AppButtonState extends State<AppButton> {
+class _AppButtonState extends ConsumerState<AppButton> {
   bool _pressed = false;
+
+  void _handleTap() {
+    ref.read(audioControllerProvider).buttonTap();
+    widget.onPressed?.call();
+  }
 
   ({Color bg, Color fg, Gradient? gradient, Border? border}) _colors() {
     switch (widget.style) {
@@ -51,7 +62,7 @@ class _AppButtonState extends State<AppButton> {
       onTapDown: disabled ? null : (_) => setState(() => _pressed = true),
       onTapCancel: () => setState(() => _pressed = false),
       onTapUp: (_) => setState(() => _pressed = false),
-      onTap: widget.onPressed,
+      onTap: disabled ? null : _handleTap,
       child: AnimatedScale(
         scale: _pressed ? 0.96 : 1.0,
         duration: const Duration(milliseconds: 120),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../audio/audio_controller.dart';
 import '../profile/profile.dart';
 import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
@@ -33,7 +34,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     // Mutating provider state during build() would trigger another build,
     // looping forever — regen on mount and on resume only, never in build().
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) ref.read(profileControllerProvider.notifier).regenLivesNow();
+      if (!mounted) return;
+      ref.read(profileControllerProvider.notifier).regenLivesNow();
+      ref.read(audioControllerProvider).playMenuMusic();
     });
   }
 

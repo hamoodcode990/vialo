@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../account/account_controller.dart';
+import '../audio/audio_controller.dart';
 import '../monetization/monetization_controller.dart';
 import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
@@ -9,7 +10,9 @@ import '../theme/spacing.dart';
 
 /// Sound, match length, and restore-purchases. Port of decant.html's mute
 /// toggle + best-of picker (scattered there; consolidated here as its own
-/// screen per flutter_port_plan.md's Phase 4 screen list).
+/// screen per flutter_port_plan.md's Phase 4 screen list). Sound effects
+/// and music are independent toggles (CLAUDE.md Step 9) rather than the
+/// single combined switch the HTML prototype had.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -17,6 +20,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(profileProvider);
     final ctrl = ref.read(profileControllerProvider.notifier);
+    final audio = ref.read(audioControllerProvider);
     final monetize = ref.watch(monetizationControllerProvider);
 
     return Scaffold(
@@ -26,12 +30,26 @@ class SettingsScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
             _Card(
-              child: SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Sound', style: TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: const Text('Music and sound effects', style: TextStyle(color: AppColors.mute, fontSize: 12)),
-                value: !profile.muted,
-                onChanged: (on) => ctrl.setMuted(!on),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Sound effects', style: TextStyle(fontWeight: FontWeight.w700)),
+                    subtitle: const Text('Pours, claims, wins, taps', style: TextStyle(color: AppColors.mute, fontSize: 12)),
+                    value: !profile.muted,
+                    onChanged: (on) => ctrl.setMuted(!on),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Music', style: TextStyle(fontWeight: FontWeight.w700)),
+                    subtitle: const Text('Background loop during menus and gameplay', style: TextStyle(color: AppColors.mute, fontSize: 12)),
+                    value: !profile.musicMuted,
+                    onChanged: (on) {
+                      ctrl.setMusicMuted(!on);
+                      audio.refreshMusicMuteState();
+                    },
+                  ),
+                ],
               ),
             ),
             const _Label('QUICK MATCH LENGTH'),

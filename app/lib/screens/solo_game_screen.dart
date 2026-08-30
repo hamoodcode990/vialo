@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../audio/audio_controller.dart';
 import '../game/game.dart';
 import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
@@ -57,10 +58,14 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
         setState(() {});
       }
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(audioControllerProvider).playGameMusic();
+    });
   }
 
   @override
   void dispose() {
+    ref.read(audioControllerProvider).playMenuMusic();
     _ticker?.cancel();
     super.dispose();
   }
@@ -107,6 +112,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
       return;
     }
     if (!board.legal(selected!, i)) {
+      ref.read(audioControllerProvider).invalidMove();
       setState(() {
         shakeTube = selected!;
         shakeTrigger++;
@@ -146,6 +152,11 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
         dstBox.localToGlobal(Offset.zero, ancestor: boardBox) & dstBox.size;
     final palette = tubePaletteById(ref.read(profileProvider).paletteId);
     setState(() => animating = true);
+    final audio = ref.read(audioControllerProvider);
+    for (var i = 0; i < n; i++) {
+      Future.delayed(Duration(milliseconds: i * 72), () => audio.pourDrip(i));
+      Future.delayed(Duration(milliseconds: i * 72 + 475), audio.splash);
+    }
     _flightKey.currentState!.playPour(
       from: srcRect,
       to: dstRect,
@@ -161,6 +172,10 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
 
   void _commitPour(int s, int d) {
     board.pour(s, d);
+    final destTube = board.tubes[d];
+    if (destTube.length == kCap && destTube.every((v) => v == destTube[0])) {
+      ref.read(audioControllerProvider).claim();
+    }
     if (board.done) {
       _onSolved();
     } else if (board.failed) {
@@ -171,8 +186,11 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
   }
 
   void _onSolved() {
+    final audio = ref.read(audioControllerProvider);
+    audio.levelWin();
     if (widget.isDaily) {
-      ref.read(profileControllerProvider.notifier).completeDailyNow();
+      final earned = ref.read(profileControllerProvider.notifier).completeDailyNow();
+      if (earned) audio.coinGain();
       return;
     }
     if (widget.levelNumber == null) return; // Shuffle: no economy hooks
@@ -185,11 +203,13 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
     final earned = ref
         .read(profileControllerProvider.notifier)
         .recordLevelWin('solo', widget.levelNumber!, stars);
+    audio.coinGain();
     starsEarned = stars;
     coinsEarned = earned;
   }
 
   void _onFailed() {
+    ref.read(audioControllerProvider).levelLose();
     if (widget.isDaily || widget.levelNumber == null) {
       return; // no lives cost for daily/shuffle
     }
