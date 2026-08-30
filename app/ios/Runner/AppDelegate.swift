@@ -12,7 +12,7 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    registerCloudKVChannel(engineBridge.pluginRegistry)
+    registerCloudKVChannel(engineBridge.applicationRegistrar.messenger())
   }
 
   // iCloud key-value store bridge for lib/account/cloud_profile_sync.dart
@@ -21,9 +21,16 @@ import UIKit
   // the iCloud > Key-value storage capability enabled in Xcode's Signing &
   // Capabilities before this does anything — see the note left in
   // ios/Runner/Runner.entitlements.
-  private func registerCloudKVChannel(_ registry: FlutterPluginRegistry) {
-    let registrar = registry.registrar(forPlugin: "VialoCloudKV")
-    let channel = FlutterMethodChannel(name: "vialo/icloud_kv", binaryMessenger: registrar.messenger())
+  //
+  // Verified against the engine's FlutterImplicitEngineBridge declaration
+  // and Flutter's own ios_add2app_uiscene sample (both found in this
+  // machine's Flutter SDK checkout under dev/integration_tests/) —
+  // `applicationRegistrar.messenger()` is the documented way to get an
+  // app-level FlutterBinaryMessenger from this bridge type, an earlier
+  // draft of this code used the wrong call (registry.registrar(forPlugin:))
+  // before those files were found.
+  private func registerCloudKVChannel(_ messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(name: "vialo/icloud_kv", binaryMessenger: messenger)
     channel.setMethodCallHandler { call, result in
       let store = NSUbiquitousKeyValueStore.default
       guard let args = call.arguments as? [String: Any], let key = args["key"] as? String else {
