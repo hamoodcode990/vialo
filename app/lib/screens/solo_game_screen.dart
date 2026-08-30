@@ -10,6 +10,7 @@ import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/tube_palettes.dart';
+import '../widgets/app_route.dart';
 import '../widgets/game_result_panel.dart';
 import '../widgets/pour_flight_overlay.dart';
 import '../widgets/tube_view.dart';
@@ -460,7 +461,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
         actions = [
           primaryAction('Next level', () {
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
+              AppRoute(
                 builder: (_) =>
                     SoloGameScreen(levelNumber: widget.levelNumber! + 1),
               ),

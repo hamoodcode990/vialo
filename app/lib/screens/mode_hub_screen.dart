@@ -7,6 +7,7 @@ import '../theme/cosmetics.dart';
 import '../theme/mode_info.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_route.dart';
 import '../widgets/header_bar.dart';
 import 'game_screen_router.dart';
 import 'level_select_screen.dart';
@@ -40,9 +41,9 @@ class ModeHubScreen extends ConsumerWidget {
                 lives: profile.lives,
                 lifeMax: 5,
                 coins: profile.coins,
-                onAvatarTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
-                onLivesTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreScreen())),
-                onCoinsTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreScreen())),
+                onAvatarTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const ProfileScreen())),
+                onLivesTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen())),
+                onCoinsTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen())),
               ),
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.lg),
@@ -53,21 +54,21 @@ class ModeHubScreen extends ConsumerWidget {
                 accentColor: info.color,
                 title: 'Levels',
                 subtitle: '$cleared/$total cleared · costs lives to fail, coins to win',
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => LevelSelectScreen(mode: modeId))),
+                onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => LevelSelectScreen(mode: modeId))),
               ),
               HubCard(
                 emoji: '⚡',
                 accentColor: info.color,
                 title: 'Quick match',
                 subtitle: 'Pick a difficulty, play now — free, unlimited',
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => QuickMatchSetupScreen(modeId: modeId))),
+                onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => QuickMatchSetupScreen(modeId: modeId))),
               ),
               HubCard(
                 emoji: '🤝',
                 accentColor: info.color,
                 title: 'Pass & play',
                 subtitle: 'Local two-player, same device — free, unlimited',
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => GameScreenRouter.passPlay(modeId: modeId))),
+                onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => GameScreenRouter.passPlay(modeId: modeId))),
               ),
             ],
           ),

@@ -9,6 +9,7 @@ import '../theme/cosmetics.dart';
 import '../theme/mode_info.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_route.dart';
 import '../widgets/header_bar.dart';
 import 'daily_challenge_screen.dart';
 import 'game_screen_router.dart';
@@ -78,9 +79,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                 lifeMax: PlayerProfile.lifeMax,
                 countdownText: countdown,
                 coins: profile.coins,
-                onAvatarTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
-                onLivesTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreScreen())),
-                onCoinsTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreScreen())),
+                onAvatarTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const ProfileScreen())),
+                onLivesTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen())),
+                onCoinsTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen())),
               ),
               Center(
                 child: Column(
@@ -116,7 +117,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
               ),
               const SizedBox(height: AppSpacing.xl),
               AppCard(
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DailyChallengeScreen())),
+                onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const DailyChallengeScreen())),
                 child: Row(
                   children: [
                     Expanded(
@@ -140,7 +141,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
               for (final mode in kDuelModes) _ModeTile(mode: mode),
               AppCard(
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SoloLevelMapScreen()),
+                  AppRoute(builder: (_) => const SoloLevelMapScreen()),
                 ),
                 child: Row(
                   children: [
@@ -153,11 +154,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _IconButton(emoji: '🛍️', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreScreen()))),
-                  _IconButton(emoji: '📊', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StatsScreen()))),
+                  _IconButton(emoji: '🛍️', onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen()))),
+                  _IconButton(emoji: '📊', onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StatsScreen()))),
                   _IconButton(
                     emoji: '⚙️',
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                    onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const SettingsScreen())),
                   ),
                 ],
               ),
@@ -184,7 +185,7 @@ class _ModeTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return AppCard(
       accentColor: mode.color,
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ModeHubScreen(modeId: mode.id))),
+      onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => ModeHubScreen(modeId: mode.id))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -194,7 +195,7 @@ class _ModeTile extends ConsumerWidget {
           const SizedBox(height: 10),
           GestureDetector(
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => GameScreenRouter.passPlay(modeId: mode.id)),
+              AppRoute(builder: (_) => GameScreenRouter.passPlay(modeId: mode.id)),
             ),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

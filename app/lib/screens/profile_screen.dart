@@ -5,6 +5,7 @@ import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/cosmetics.dart';
 import '../theme/spacing.dart';
+import '../widgets/app_route.dart';
 import 'settings_screen.dart';
 import 'stats_screen.dart';
 
@@ -87,8 +88,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ],
             ),
             const SizedBox(height: AppSpacing.lg),
-            _NavRow(label: 'Stats', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StatsScreen()))),
-            _NavRow(label: 'Settings', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen()))),
+            _NavRow(label: 'Stats', onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StatsScreen()))),
+            _NavRow(label: 'Settings', onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const SettingsScreen()))),
           ],
         ),
       ),

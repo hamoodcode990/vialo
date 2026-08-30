@@ -7,6 +7,7 @@ import '../theme/app_colors.dart';
 import '../theme/cosmetics.dart';
 import '../theme/mode_info.dart';
 import '../theme/spacing.dart';
+import '../widgets/app_route.dart';
 import '../widgets/header_bar.dart';
 import '../widgets/star_row.dart';
 import 'game_screen_router.dart';
@@ -49,9 +50,9 @@ class LevelSelectScreen extends ConsumerWidget {
                 lives: profile.lives,
                 lifeMax: 5,
                 coins: profile.coins,
-                onAvatarTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
-                onLivesTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreScreen())),
-                onCoinsTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreScreen())),
+                onAvatarTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const ProfileScreen())),
+                onLivesTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen())),
+                onCoinsTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen())),
               ),
               Text(
                 '$cleared/$total CLEARED · NEXT: LEVEL ${progress > total ? total : progress}',
@@ -154,10 +155,10 @@ class _LevelChip extends ConsumerWidget {
     final profile = ref.read(profileProvider);
     final unlimited = profile.tempLivesUntil > DateTime.now().millisecondsSinceEpoch;
     if (profile.lives <= 0 && !unlimited) {
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreScreen()));
+      Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen()));
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Out of lives')));
       return;
     }
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => GameScreenRouter.level(modeId: mode, levelNumber: n)));
+    Navigator.of(context).push(AppRoute(builder: (_) => GameScreenRouter.level(modeId: mode, levelNumber: n)));
   }
 }

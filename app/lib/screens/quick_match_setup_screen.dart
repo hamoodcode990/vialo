@@ -5,6 +5,7 @@ import '../theme/app_colors.dart';
 import '../theme/mode_info.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_route.dart';
 import 'game_screen_router.dart';
 
 const Map<String, String> _kDifficultyBlurb = {
@@ -57,7 +58,7 @@ class _QuickMatchSetupScreenState extends State<QuickMatchSetupScreen> {
             for (final key in ['easy', 'normal', 'hard'])
               AppCard(
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
+                  AppRoute(
                     builder: (_) => GameScreenRouter.quickMatch(modeId: widget.modeId, aiKey: key, format: format),
                   ),
                 ),

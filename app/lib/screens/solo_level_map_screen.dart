@@ -7,6 +7,7 @@ import '../theme/app_colors.dart';
 import '../theme/chapters.dart';
 import '../theme/cosmetics.dart';
 import '../theme/spacing.dart';
+import '../widgets/app_route.dart';
 import '../widgets/header_bar.dart';
 import '../widgets/level_road_path.dart';
 import 'game_screen_router.dart';
@@ -64,9 +65,9 @@ class _SoloLevelMapScreenState extends ConsumerState<SoloLevelMapScreen> {
                           lives: profile.lives,
                           lifeMax: 5,
                           coins: profile.coins,
-                          onAvatarTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
-                          onLivesTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreScreen())),
-                          onCoinsTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreScreen())),
+                          onAvatarTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const ProfileScreen())),
+                          onLivesTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen())),
+                          onCoinsTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen())),
                         ),
                         Text(
                           'LEVEL ${progress > total ? total : progress} OF $total',
@@ -119,11 +120,11 @@ class _SoloLevelMapScreenState extends ConsumerState<SoloLevelMapScreen> {
     final profile = ref.read(profileProvider);
     final unlimited = profile.tempLivesUntil > DateTime.now().millisecondsSinceEpoch;
     if (profile.lives <= 0 && !unlimited) {
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreScreen()));
+      Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen()));
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Out of lives')));
       return;
     }
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => GameScreenRouter.level(modeId: 'solo', levelNumber: node.level)));
+    Navigator.of(context).push(AppRoute(builder: (_) => GameScreenRouter.level(modeId: 'solo', levelNumber: node.level)));
   }
 }
 
