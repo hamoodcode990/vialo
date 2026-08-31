@@ -47,6 +47,13 @@ class PlayerProfile {
   /// been shown/skipped. Once true, it never shows again for this player.
   bool onboarded;
 
+  /// Mode ids ('solo', 'pour', 'split', 'fuse', 'recipe') whose how-to-play
+  /// tutorial has already been shown once, via whichever door (levels, quick
+  /// match, or pass & play) the player first walked through for that mode.
+  /// Reopenable any time afterwards from the mode hub's help icon, but the
+  /// auto-shown, gate-the-first-game version only ever fires once per mode.
+  final Set<String> seenModeTutorials;
+
   /// The stable Apple user identifier from Sign in with Apple (CLAUDE.md
   /// Step 7), or null if never linked. Sign-in is entirely optional — this
   /// being null never blocks play, it only means progress stays local-only.
@@ -75,6 +82,7 @@ class PlayerProfile {
     this.muted = false,
     this.musicMuted = false,
     this.onboarded = false,
+    Set<String>? seenModeTutorials,
     this.appleUserId,
     DuelStats? stats,
     DailyChallenge? daily,
@@ -85,6 +93,7 @@ class PlayerProfile {
         stars = stars ?? {for (final m in kModes) m: <String, int>{}},
         unlockedPalettes = unlockedPalettes ?? ['lab', 'hc'],
         unlockedBackgrounds = unlockedBackgrounds ?? ['bg1'],
+        seenModeTutorials = seenModeTutorials ?? <String>{},
         stats = stats ?? DuelStats(),
         daily = daily ?? DailyChallenge(),
         achievements = achievements ?? <String>{};
@@ -259,6 +268,7 @@ class PlayerProfile {
         muted: json['muted'] as bool? ?? false,
         musicMuted: json['musicMuted'] as bool? ?? false,
         onboarded: json['onboarded'] as bool? ?? false,
+        seenModeTutorials: (json['seenModeTutorials'] as List?)?.cast<String>().toSet(),
         appleUserId: json['appleUserId'] as String?,
         stats: json['stats'] != null
             ? DuelStats.fromJson(json['stats'] as Map<String, dynamic>)
@@ -288,6 +298,7 @@ class PlayerProfile {
         'muted': muted,
         'musicMuted': musicMuted,
         'onboarded': onboarded,
+        'seenModeTutorials': seenModeTutorials.toList(),
         'appleUserId': appleUserId,
         'stats': stats.toJson(),
         'daily': daily.toJson(),

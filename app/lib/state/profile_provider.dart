@@ -149,6 +149,15 @@ class ProfileController extends AsyncNotifier<PlayerProfile> {
     _commit(p.clone());
   }
 
+  /// Marks a mode's how-to-play tutorial as seen, so [openMode] (see
+  /// widgets/mode_entry.dart) stops auto-showing it before that mode's
+  /// games. No-op if already marked, so callers don't need to check first.
+  void markTutorialSeen(String modeId) {
+    final p = _current;
+    if (!p.seenModeTutorials.add(modeId)) return;
+    _commit(p.clone());
+  }
+
   void linkAppleAccount(String appleUserId) {
     final p = _current;
     p.appleUserId = appleUserId;

@@ -67,13 +67,20 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen>
   );
   _FlyingGem? _flying;
 
+  // Read once and kept, rather than `ref.read` at dispose time — by then the
+  // widget is unmounting and Riverpod's `ref` throws. AudioController is an
+  // app-lifetime singleton provider, so caching it here is exactly as fresh
+  // as reading it again would be.
+  late final AudioController _audio;
+
   @override
   void initState() {
     super.initState();
+    _audio = ref.read(audioControllerProvider);
     _initGame();
     if (widget.mode == 'ai' && engine.turn == 1) _aiTurn();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) ref.read(audioControllerProvider).playGameMusic();
+      if (mounted) _audio.playGameMusic();
     });
   }
 
@@ -164,7 +171,7 @@ class _FuseGameScreenState extends ConsumerState<FuseGameScreen>
 
   @override
   void dispose() {
-    ref.read(audioControllerProvider).playMenuMusic();
+    _audio.playMenuMusic();
     _flyCtrl.dispose();
     super.dispose();
   }

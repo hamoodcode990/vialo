@@ -2,6 +2,7 @@
 // and lands on the home screen with the header bar and all four duel-mode
 // tiles visible.
 import 'package:vialo/main.dart';
+import 'package:vialo/screens/duel_tube_game_screen.dart';
 import 'package:vialo/theme/cosmetics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -119,5 +120,58 @@ void main() {
     await tester.tap(find.byIcon(Icons.lock_rounded).first);
     await tester.pump();
     expect(find.textContaining('Unlocks at Solo level'), findsOneWidget);
+  });
+
+  testWidgets('first pass & play in a mode shows its tutorial once, then plays', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({'vialo_profile_v1': '{"onboarded":true}'});
+    await tester.pumpWidget(const ProviderScope(child: VialoApp()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 2600));
+
+    await tester.tap(find.text('Pour').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Pass & play'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // The tutorial gate fired instead of jumping straight to the game.
+    expect(find.text('Pour — how to play'), findsOneWidget);
+    expect(find.byType(DuelTubeGameScreen), findsNothing);
+
+    // Walk through every step to the final "Let's play" CTA.
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(find.text('Next'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+    await tester.tap(find.text("Let's play"));
+    await tester.pump();
+    // pumpAndSettle rather than a fixed pump: the game screen staggers each
+    // tube's entrance reveal in on its own delayed Future (tube_view.dart),
+    // and by now the tutorial's own looping demo timer is gone (its screen
+    // was just popped), so nothing here runs forever the way it would.
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DuelTubeGameScreen), findsOneWidget);
+  });
+
+  testWidgets('a mode already marked seen skips straight past its tutorial', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({
+      'vialo_profile_v1': '{"onboarded":true,"seenModeTutorials":["pour"]}',
+    });
+    await tester.pumpWidget(const ProviderScope(child: VialoApp()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 2600));
+
+    await tester.tap(find.text('Pour').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Pass & play'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pour — how to play'), findsNothing);
+    expect(find.byType(DuelTubeGameScreen), findsOneWidget);
   });
 }

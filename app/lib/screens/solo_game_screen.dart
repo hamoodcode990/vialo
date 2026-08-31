@@ -51,9 +51,16 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
   final GlobalKey<PourFlightOverlayState> _flightKey = GlobalKey();
   List<GlobalKey> _tubeKeys = [];
 
+  // Read once and kept, rather than `ref.read` at dispose time — by then the
+  // widget is unmounting and Riverpod's `ref` throws. AudioController is an
+  // app-lifetime singleton provider, so caching it here is exactly as fresh
+  // as reading it again would be.
+  late final AudioController _audio;
+
   @override
   void initState() {
     super.initState();
+    _audio = ref.read(audioControllerProvider);
     _initBoard();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted && _startedAt != null && !board.done && !board.failed) {
@@ -61,13 +68,13 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) ref.read(audioControllerProvider).playGameMusic();
+      if (mounted) _audio.playGameMusic();
     });
   }
 
   @override
   void dispose() {
-    ref.read(audioControllerProvider).playMenuMusic();
+    _audio.playMenuMusic();
     _ticker?.cancel();
     super.dispose();
   }

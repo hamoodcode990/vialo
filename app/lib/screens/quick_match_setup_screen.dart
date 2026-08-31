@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../game/game.dart';
 import '../theme/app_colors.dart';
 import '../theme/mode_info.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_card.dart';
-import '../widgets/app_route.dart';
+import '../widgets/mode_entry.dart';
 import 'game_screen_router.dart';
 
 const Map<String, String> _kDifficultyBlurb = {
@@ -16,15 +17,15 @@ const Map<String, String> _kDifficultyBlurb = {
 
 /// Difficulty (and, for Pour, format) picker before a Quick Match. Port of
 /// decant.html's `setup()`.
-class QuickMatchSetupScreen extends StatefulWidget {
+class QuickMatchSetupScreen extends ConsumerStatefulWidget {
   final String modeId;
   const QuickMatchSetupScreen({super.key, required this.modeId});
 
   @override
-  State<QuickMatchSetupScreen> createState() => _QuickMatchSetupScreenState();
+  ConsumerState<QuickMatchSetupScreen> createState() => _QuickMatchSetupScreenState();
 }
 
-class _QuickMatchSetupScreenState extends State<QuickMatchSetupScreen> {
+class _QuickMatchSetupScreenState extends ConsumerState<QuickMatchSetupScreen> {
   String format = 'standard';
 
   @override
@@ -57,10 +58,11 @@ class _QuickMatchSetupScreenState extends State<QuickMatchSetupScreen> {
             const _SectionLabel('DIFFICULTY'),
             for (final key in ['easy', 'normal', 'hard'])
               AppCard(
-                onTap: () => Navigator.of(context).push(
-                  AppRoute(
-                    builder: (_) => GameScreenRouter.quickMatch(modeId: widget.modeId, aiKey: key, format: format),
-                  ),
+                onTap: () => openMode(
+                  context,
+                  ref,
+                  modeId: widget.modeId,
+                  gameBuilder: (_) => GameScreenRouter.quickMatch(modeId: widget.modeId, aiKey: key, format: format),
                 ),
                 child: Row(
                   children: [

@@ -10,7 +10,9 @@ import '../theme/spacing.dart';
 import '../widgets/app_route.dart';
 import '../widgets/header_bar.dart';
 import '../widgets/level_road_path.dart';
+import '../widgets/mode_entry.dart';
 import 'game_screen_router.dart';
+import 'mode_tutorial_screen.dart';
 import 'profile_screen.dart';
 import 'store_screen.dart';
 
@@ -46,7 +48,16 @@ class _SoloLevelMapScreenState extends ConsumerState<SoloLevelMapScreen> {
     final chapters = buildChapters(total);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Solo sort')),
+      appBar: AppBar(
+        title: const Text('Solo sort'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline_rounded),
+            tooltip: 'How to play',
+            onPressed: () => Navigator.of(context).push(AppRoute(builder: (_) => const ModeTutorialScreen(modeId: 'solo'))),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Stack(
           children: [
@@ -124,7 +135,12 @@ class _SoloLevelMapScreenState extends ConsumerState<SoloLevelMapScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Out of lives')));
       return;
     }
-    Navigator.of(context).push(AppRoute(builder: (_) => GameScreenRouter.level(modeId: 'solo', levelNumber: node.level)));
+    openMode(
+      context,
+      ref,
+      modeId: 'solo',
+      gameBuilder: (_) => GameScreenRouter.level(modeId: 'solo', levelNumber: node.level),
+    );
   }
 }
 

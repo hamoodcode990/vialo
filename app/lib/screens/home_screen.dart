@@ -12,7 +12,6 @@ import '../widgets/app_card.dart';
 import '../widgets/app_route.dart';
 import '../widgets/header_bar.dart';
 import 'daily_challenge_screen.dart';
-import 'game_screen_router.dart';
 import 'mode_hub_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
@@ -177,6 +176,12 @@ String _fmtCountdown(int ms) {
   return h > 0 ? '${h}h ${m}m' : '${m}m';
 }
 
+/// One tap target per card, always to the mode's hub (Levels / Quick Match /
+/// Pass & Play) — it used to also carry a "Pass & play ›" shortcut chip
+/// nested inside the same tappable card, a second hit target sitting a few
+/// pixels from the first that was easy to fat-finger by mistake and skipped
+/// the hub (and its "how to play" entry) entirely. The hub is one tap away
+/// and now surfaces the tutorial, so the shortcut wasn't worth the ambiguity.
 class _ModeTile extends ConsumerWidget {
   final ModeInfo mode;
   const _ModeTile({required this.mode});
@@ -186,26 +191,19 @@ class _ModeTile extends ConsumerWidget {
     return AppCard(
       accentColor: mode.color,
       onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => ModeHubScreen(modeId: mode.id))),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(mode.name, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
-          const SizedBox(height: 3),
-          Text(mode.blurb, style: const TextStyle(fontSize: 12, color: AppColors.mute, height: 1.4)),
-          const SizedBox(height: 10),
-          GestureDetector(
-            onTap: () => Navigator.of(context).push(
-              AppRoute(builder: (_) => GameScreenRouter.passPlay(modeId: mode.id)),
-            ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient: LinearGradient(colors: [mode.color, Color.lerp(mode.color, Colors.black, 0.3)!]),
-              ),
-              child: const Text('Pass & play ›', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 11)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(mode.name, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
+                const SizedBox(height: 3),
+                Text(mode.blurb, style: const TextStyle(fontSize: 12, color: AppColors.mute, height: 1.4)),
+              ],
             ),
           ),
+          Icon(Icons.chevron_right_rounded, color: mode.color),
         ],
       ),
     );

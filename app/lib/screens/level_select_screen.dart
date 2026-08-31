@@ -9,6 +9,7 @@ import '../theme/mode_info.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_route.dart';
 import '../widgets/header_bar.dart';
+import '../widgets/mode_entry.dart';
 import '../widgets/star_row.dart';
 import 'game_screen_router.dart';
 import 'profile_screen.dart';
@@ -159,6 +160,11 @@ class _LevelChip extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Out of lives')));
       return;
     }
-    Navigator.of(context).push(AppRoute(builder: (_) => GameScreenRouter.level(modeId: mode, levelNumber: n)));
+    openMode(
+      context,
+      ref,
+      modeId: mode,
+      gameBuilder: (_) => GameScreenRouter.level(modeId: mode, levelNumber: n),
+    );
   }
 }
