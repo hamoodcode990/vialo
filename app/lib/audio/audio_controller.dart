@@ -47,16 +47,34 @@ class AudioController {
   AudioController(this._profile);
 
   // ---- lazily-rendered, calm-vs-lighter looping pads --------------------
+  //
+  // Each track is a real four-chord progression (voice-led — adjacent
+  // chords share common tones) rather than one static chord held for the
+  // whole loop, which is what made the old pad sound like a flat drone on
+  // repeat. See wave_synth.dart's renderAmbientPad for the synthesis side
+  // (chorus detune, tremolo, echo) — this is just the composition.
 
-  Uint8List _menuTrackBytes() => renderPad(
-        freqs: const [261.63, 329.63, 392.00], // C4 E4 G4 — calm, for menu screens
-        duration: 6,
+  // Am7 - Fmaj7 - Cmaj7 - Gsus4→G: a warm i-VI-III-VII loop, for menu screens.
+  Uint8List _menuTrackBytes() => renderAmbientPad(
+        chords: const [
+          [220.00, 261.63, 329.63, 392.00], // Am7:  A3 C4 E4 G4
+          [174.61, 220.00, 261.63, 329.63], // Fmaj7: F3 A3 C4 E4
+          [261.63, 329.63, 392.00, 493.88], // Cmaj7: C4 E4 G4 B4
+          [196.00, 261.63, 293.66, 392.00], // Gsus4: G3 C4 D4 G4
+        ],
+        duration: 28,
         volume: 0.045,
       );
 
-  Uint8List _gameTrackBytes() => renderPad(
-        freqs: const [293.66, 369.99, 440.00], // D4 F#4 A4 — a touch brighter, for gameplay
-        duration: 4,
+  // Dmaj7 - Bm7 - G - Asus4→A: a brighter I-vi-IV-V loop, for gameplay.
+  Uint8List _gameTrackBytes() => renderAmbientPad(
+        chords: const [
+          [293.66, 369.99, 440.00, 554.37], // Dmaj7: D4 F#4 A4 C#5
+          [246.94, 293.66, 369.99, 440.00], // Bm7:   B3 D4 F#4 A4
+          [196.00, 246.94, 293.66, 392.00], // G:     G3 B3 D4 G4
+          [220.00, 293.66, 329.63, 440.00], // Asus4: A3 D4 E4 A4
+        ],
+        duration: 24,
         volume: 0.05,
       );
 
@@ -135,7 +153,12 @@ class AudioController {
     try {
       await _ensureContext();
       await _music.setReleaseMode(ReleaseMode.loop);
-      final path = await _fileFor('music_$track', track == 'menu' ? _menuTrackBytes : _gameTrackBytes);
+      // 'v2' bumps the cache key so a device that already wrote the old
+      // one-chord-drone file (keyed just as 'music_$track') under
+      // getTemporaryDirectory() picks up the new composition instead of
+      // silently keeping the stale file forever — _fileFor only (re)renders
+      // when the path doesn't already exist.
+      final path = await _fileFor('music_${track}_v2', track == 'menu' ? _menuTrackBytes : _gameTrackBytes);
       await _music.play(DeviceFileSource(path, mimeType: 'audio/wav'), volume: 0.35);
     } catch (e) {
       debugPrint('AudioController: music playback unavailable: $e');

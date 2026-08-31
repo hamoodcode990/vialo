@@ -59,24 +59,63 @@ Uint8List renderTone({
   return _pcm16Wav(samples);
 }
 
-/// Renders a soft looping pad: a chord of sine tones under one shared
+/// One chord in a pad progression: the frequencies (Hz) sounding together.
+typedef Chord = List<double>;
+
+/// Renders a slowly evolving ambient pad: [chords] held in equal shares of
+/// [duration], each one crossfading softly into the next, under a shared
 /// raised-cosine envelope (fades in over the first 12%, out over the last
-/// 12%, flat in between) so consecutive loop iterations join seamlessly at
-/// silence rather than clicking. This is the placeholder background-music
-/// half of Step 9 — same "synthesize it, don't ship a file" approach as
-/// [renderTone], just shaped for looping instead of a one-shot accent.
-Uint8List renderPad({required List<double> freqs, required double duration, double volume = 0.05}) {
+/// 12%) so consecutive loop iterations join seamlessly at silence. This is
+/// the background-music half of Step 9 — same "synthesize it, don't ship a
+/// file" approach as [renderTone] — but a moving chord progression instead
+/// of one static chord held for the whole loop, which is what previously
+/// read as a flat, grating drone on repeat. Every note is voiced as three
+/// slightly detuned partials (a cheap chorus, avoiding the sterile sound of
+/// a bare sine), there's a slow tremolo for a sense of breathing, and a
+/// soft two-tap echo for a little space — all still just math, no assets.
+Uint8List renderAmbientPad({
+  required List<Chord> chords,
+  required double duration,
+  double volume = 0.05,
+}) {
+  assert(chords.isNotEmpty);
   final sampleCount = (kSynthSampleRate * duration).round();
   final samples = Float64List(sampleCount);
   final fadeSamples = (sampleCount * 0.12).round();
+  final chordDuration = duration / chords.length;
+  const crossfadeFrac = 0.3;
+
+  double chordSampleAt(Chord chord, double t) {
+    var mix = 0.0;
+    for (final f in chord) {
+      // Three-partial chorus (root + ~0.3% detuned above/below) rather than
+      // one bare sine per note — the detuning is what keeps a held chord
+      // from sounding like a sterile test tone.
+      mix += math.sin(2 * math.pi * f * t) +
+          0.5 * math.sin(2 * math.pi * f * 1.003 * t) +
+          0.5 * math.sin(2 * math.pi * f * 0.997 * t);
+    }
+    return mix / (chord.length * 2);
+  }
 
   for (var i = 0; i < sampleCount; i++) {
     final t = i / kSynthSampleRate;
-    double mix = 0;
-    for (final f in freqs) {
-      mix += math.sin(2 * math.pi * f * t);
+
+    final chordIndex = (t / chordDuration).floor().clamp(0, chords.length - 1);
+    final tInChord = t - chordIndex * chordDuration;
+    final progress = tInChord / chordDuration;
+
+    var mix = chordSampleAt(chords[chordIndex], t);
+    final crossfadeStart = 1 - crossfadeFrac;
+    if (progress > crossfadeStart) {
+      final nextChord = chords[(chordIndex + 1) % chords.length];
+      final blend = (progress - crossfadeStart) / crossfadeFrac;
+      mix = mix * (1 - blend) + chordSampleAt(nextChord, t) * blend;
     }
-    mix /= freqs.length;
+
+    // Slow tremolo (~7.7s cycle) so a held chord still feels like it's
+    // breathing rather than sitting perfectly static.
+    final tremolo = 1 - 0.06 * math.sin(2 * math.pi * 0.13 * t);
 
     double env;
     if (i < fadeSamples) {
@@ -87,7 +126,18 @@ Uint8List renderPad({required List<double> freqs, required double duration, doub
       env = 1.0;
     }
 
-    samples[i] = mix * volume * env;
+    samples[i] = mix * volume * tremolo * env;
+  }
+
+  // Soft two-tap echo (slap-back at 0.35s/0.6s) read from the dry signal
+  // computed above — adds a sense of space without a real feedback loop
+  // that could build up and clip.
+  final dry = Float64List.fromList(samples);
+  final tap1 = (kSynthSampleRate * 0.35).round();
+  final tap2 = (kSynthSampleRate * 0.6).round();
+  for (var i = 0; i < sampleCount; i++) {
+    if (i >= tap1) samples[i] += dry[i - tap1] * 0.22;
+    if (i >= tap2) samples[i] += dry[i - tap2] * 0.12;
   }
 
   return _pcm16Wav(samples);

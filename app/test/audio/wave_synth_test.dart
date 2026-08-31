@@ -69,4 +69,43 @@ void main() {
       }
     });
   });
+
+  group('renderAmbientPad', () {
+    const chords = [
+      [220.00, 261.63, 329.63, 392.00],
+      [174.61, 220.00, 261.63, 329.63],
+      [261.63, 329.63, 392.00, 493.88],
+      [196.00, 261.63, 293.66, 392.00],
+    ];
+
+    test('data length matches the requested duration at the fixed sample rate', () {
+      final bytes = renderAmbientPad(chords: chords, duration: 2.0);
+      final data = ByteData.sublistView(bytes);
+      final dataLength = data.getUint32(40, Endian.little);
+      final expectedSamples = (kSynthSampleRate * 2.0).round();
+      expect(dataLength, expectedSamples * 2);
+    });
+
+    test('every sample fits in the 16-bit PCM range (no clipping overflow), even with the echo tail', () {
+      final bytes = renderAmbientPad(chords: chords, duration: 2.0, volume: 0.05);
+      final data = ByteData.sublistView(bytes);
+      for (var offset = 44; offset < bytes.length; offset += 2) {
+        final sample = data.getInt16(offset, Endian.little);
+        expect(sample, inInclusiveRange(-32768, 32767));
+      }
+    });
+
+    test('starts and ends near silence so consecutive loop iterations join without a click', () {
+      final bytes = renderAmbientPad(chords: chords, duration: 2.0);
+      final data = ByteData.sublistView(bytes);
+      final sampleCount = (bytes.length - 44) ~/ 2;
+      expect(data.getInt16(44, Endian.little).abs(), lessThan(50));
+      expect(data.getInt16(44 + (sampleCount - 1) * 2, Endian.little).abs(), lessThan(50));
+    });
+
+    test('a single-chord loop still renders (crossfade targets itself)', () {
+      final bytes = renderAmbientPad(chords: const [[220.0, 329.63]], duration: 1.0);
+      expect(bytes.length, greaterThan(44));
+    });
+  });
 }

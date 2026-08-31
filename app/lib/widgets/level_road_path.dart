@@ -153,13 +153,22 @@ class _LevelNode extends StatelessWidget {
                         colors: [accent, Color.lerp(accent, Colors.black, 0.28)!],
                       ),
                 color: locked ? AppColors.ink2 : null,
-                boxShadow: [
-                  BoxShadow(
-                    color: (current ? accent : AppColors.txt).withValues(alpha: current ? 0.45 : 0.14),
-                    blurRadius: current ? 18 : 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                // Locked nodes are flat/inert (just a circle + lock icon) and
+                // are the large majority of nodes on any level-road screen —
+                // most of a mode's 100-300 levels sit past the unlock
+                // frontier. A blurred BoxShadow on every one of them, on top
+                // of the completed/current nodes that actually earn a glow,
+                // was a lot of simultaneous blur for the compositor on
+                // screens with several dozen nodes visible at once.
+                boxShadow: locked
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: (current ? accent : AppColors.txt).withValues(alpha: current ? 0.45 : 0.14),
+                          blurRadius: current ? 18 : 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
               ),
               child: locked
                   ? const Icon(Icons.lock_rounded, color: AppColors.mute, size: 20)
