@@ -74,8 +74,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 2600));
 
-    // "Solo sort" sits below the fold on the test surface — scroll it into view.
-    await tester.drag(find.text('VIALO'), const Offset(0, -400));
+    // "Solo sort" can sit below the fold on the test surface — scroll it
+    // into view via the nearest Scrollable rather than a fixed drag
+    // distance, since exactly how far down it sits is a layout detail.
+    await tester.ensureVisible(find.text('Solo sort'));
     await tester.pump();
     await tester.tap(find.text('Solo sort'));
     await tester.pump();
@@ -97,6 +99,26 @@ void main() {
     await tester.pump();
 
     expect(find.text('Locked — clear the level before it first'), findsWidgets);
+  });
+
+  testWidgets("a duel mode's Levels screen tells its own chaptered story, not a flat grid", (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({'vialo_profile_v1': '{"onboarded":true}'});
+    await tester.pumpWidget(const ProviderScope(child: VialoApp()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 2600));
+
+    await tester.tap(find.text('Pour').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Levels'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Pour's own chapter 1 (theme/chapters.dart), the same road/chapter
+    // treatment Solo uses rather than a flat level grid.
+    expect(find.text('CHAPTER 1'), findsOneWidget);
+    expect(find.text('The Sorting Bench'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget); // level 1, unlocked on a fresh profile
   });
 
   testWidgets('avatar picker shows 3 unlocked + 5 locked avatars, and a locked tap explains why', (WidgetTester tester) async {

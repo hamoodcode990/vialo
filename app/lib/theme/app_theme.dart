@@ -75,6 +75,23 @@ ThemeData buildAppTheme() {
         side: const BorderSide(color: AppColors.outline, width: 3),
       ),
     ),
+    // Without this, AlertDialog falls back to Flutter's own default title/
+    // content text styles rather than anything in the TextTheme above — the
+    // one dialog in the app (settings_screen.dart's restore-progress
+    // choice) was the one spot in a fully dark-themed app relying on that
+    // default instead of an explicit colour, which is exactly the kind of
+    // gap that reads as unreadable text on a dark surface. Themed here once
+    // so every dialog (present or future) is correct without each call site
+    // having to restate it.
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppColors.ink2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        side: const BorderSide(color: AppColors.outline, width: 3),
+      ),
+      titleTextStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.txt),
+      contentTextStyle: const TextStyle(fontSize: 13.5, color: AppColors.mute, height: 1.4),
+    ),
     splashFactory: NoSplash.splashFactory,
     highlightColor: Colors.transparent,
   );

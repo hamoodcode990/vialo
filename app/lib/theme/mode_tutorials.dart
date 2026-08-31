@@ -28,7 +28,10 @@ class TutorialModeMeta {
 
 TutorialModeMeta tutorialMetaFor(String modeId) {
   if (modeId == 'solo') {
-    return const TutorialModeMeta(name: 'Solo sort', color: AppColors.p1, emoji: '🧪');
+    // A map/path glyph, not a flask — Pour already owns 🧪, and Solo's own
+    // identity everywhere else in the app (SoloLevelMapScreen, its Home
+    // card) is the winding road, not a tube.
+    return const TutorialModeMeta(name: 'Solo sort', color: AppColors.p1, emoji: '🗺️');
   }
   final m = modeInfoFor(modeId);
   return TutorialModeMeta(name: m.name, color: m.color, emoji: m.emoji);

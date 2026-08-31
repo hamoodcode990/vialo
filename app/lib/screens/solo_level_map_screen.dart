@@ -11,6 +11,7 @@ import '../widgets/app_route.dart';
 import '../widgets/header_bar.dart';
 import '../widgets/level_road_path.dart';
 import '../widgets/mode_entry.dart';
+import '../widgets/parallax_backdrop.dart';
 import 'game_screen_router.dart';
 import 'mode_tutorial_screen.dart';
 import 'profile_screen.dart';
@@ -45,7 +46,7 @@ class _SoloLevelMapScreenState extends ConsumerState<SoloLevelMapScreen> {
     final total = kLevelCounts['solo']!;
     final progress = profile.levelProgress['solo'] ?? 1;
     final avatar = avatarById(profile.avatarId);
-    final chapters = buildChapters(total);
+    final chapters = buildChapters('solo', total);
 
     return Scaffold(
       appBar: AppBar(
@@ -61,7 +62,7 @@ class _SoloLevelMapScreenState extends ConsumerState<SoloLevelMapScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            Positioned.fill(child: _ParallaxBackdrop(scrollController: _scrollController)),
+            Positioned.fill(child: ParallaxBackdrop(scrollController: _scrollController)),
             CustomScrollView(
               controller: _scrollController,
               slivers: [
@@ -144,56 +145,3 @@ class _SoloLevelMapScreenState extends ConsumerState<SoloLevelMapScreen> {
   }
 }
 
-/// Two soft, blurred colour blobs drifting at different fractions of scroll
-/// speed — the "parallax background layers" CLAUDE.md Step 10 asks for.
-/// Deliberately simple (no image assets, matching the app's no-external-
-/// asset posture) rather than a painted landscape.
-class _ParallaxBackdrop extends StatelessWidget {
-  final ScrollController scrollController;
-  const _ParallaxBackdrop({required this.scrollController});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: scrollController,
-      builder: (context, child) {
-        final offset = scrollController.hasClients ? scrollController.offset : 0.0;
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned(
-              left: -60,
-              top: 40 - offset * 0.12,
-              child: _Blob(color: AppColors.p1.withValues(alpha: 0.10), size: 220),
-            ),
-            Positioned(
-              right: -80,
-              top: 420 - offset * 0.22,
-              child: _Blob(color: AppColors.violet.withValues(alpha: 0.09), size: 260),
-            ),
-            Positioned(
-              left: -40,
-              top: 900 - offset * 0.17,
-              child: _Blob(color: AppColors.gold.withValues(alpha: 0.10), size: 200),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _Blob extends StatelessWidget {
-  final Color color;
-  final double size;
-  const _Blob({required this.color, required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-    );
-  }
-}

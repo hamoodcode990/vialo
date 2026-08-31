@@ -137,17 +137,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
-              for (final mode in kDuelModes) _ModeTile(mode: mode),
               AppCard(
+                accentColor: AppColors.p1,
                 onTap: () => Navigator.of(context).push(
                   AppRoute(builder: (_) => const SoloLevelMapScreen()),
                 ),
                 child: Row(
                   children: [
-                    const Expanded(child: Text('Solo sort', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14))),
-                    const Icon(Icons.chevron_right_rounded, color: AppColors.mute),
+                    const Text('🗺️', style: TextStyle(fontSize: 26)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Solo sort', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${kLevelCounts['solo']} levels · your own path through the atelier',
+                            style: const TextStyle(fontSize: 11.5, color: AppColors.mute),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded, color: AppColors.p1),
                   ],
                 ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              const Padding(
+                padding: EdgeInsets.only(left: 2, bottom: AppSpacing.sm),
+                child: Text('DUELS', style: TextStyle(fontSize: 10.5, letterSpacing: 2, fontWeight: FontWeight.w800, color: AppColors.mute)),
+              ),
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: AppSpacing.md,
+                crossAxisSpacing: AppSpacing.md,
+                childAspectRatio: 1.35,
+                children: [for (final mode in kDuelModes) _ModeGridTile(mode: mode)],
               ),
               const SizedBox(height: AppSpacing.sm),
               Row(
@@ -176,34 +204,30 @@ String _fmtCountdown(int ms) {
   return h > 0 ? '${h}h ${m}m' : '${m}m';
 }
 
-/// One tap target per card, always to the mode's hub (Levels / Quick Match /
-/// Pass & Play) — it used to also carry a "Pass & play ›" shortcut chip
-/// nested inside the same tappable card, a second hit target sitting a few
-/// pixels from the first that was easy to fat-finger by mistake and skipped
-/// the hub (and its "how to play" entry) entirely. The hub is one tap away
-/// and now surfaces the tutorial, so the shortcut wasn't worth the ambiguity.
-class _ModeTile extends ConsumerWidget {
+/// A compact square tile in the 2x2 "Duels" grid — one tap target, always to
+/// the mode's hub (Levels / Quick Match / Pass & Play). Replaces four
+/// full-width cards (name + blurb + a nested "Pass & play ›" shortcut chip,
+/// itself a second hit target a few pixels from the first, easy to
+/// fat-finger by mistake) that made the home screen a long scroll before
+/// anyone reached Solo or the icon row below. Blurbs move to the hub itself,
+/// which now also surfaces the "how to play" tutorial one tap away.
+class _ModeGridTile extends ConsumerWidget {
   final ModeInfo mode;
-  const _ModeTile({required this.mode});
+  const _ModeGridTile({required this.mode});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AppCard(
       accentColor: mode.color,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => ModeHubScreen(modeId: mode.id))),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(mode.name, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
-                const SizedBox(height: 3),
-                Text(mode.blurb, style: const TextStyle(fontSize: 12, color: AppColors.mute, height: 1.4)),
-              ],
-            ),
-          ),
-          Icon(Icons.chevron_right_rounded, color: mode.color),
+          Text(mode.emoji, style: const TextStyle(fontSize: 22)),
+          const SizedBox(height: 6),
+          Text(mode.name, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
         ],
       ),
     );
