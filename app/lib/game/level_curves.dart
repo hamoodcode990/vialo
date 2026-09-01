@@ -82,9 +82,69 @@ String fuseLvlCfg(int n) => _aiTier((n - 1) / (kLevelCounts['fuse']! - 1));
 
 String recipeLvlCfg(int n) => _aiTier((n - 1) / (kLevelCounts['recipe']! - 1));
 
-/// Solo star pacing: a UX heuristic, not a measured balance constant — it
-/// never changes a rule or outcome, only how the win is graded afterward.
-int soloPar(int colors, int empty) => (colors * 2.3 + (3 - empty)).round();
+/// Measured (not guessed) near-optimal move count per Solo level — see
+/// tool/measure_solo_par.dart, which solves every level with a real IDA*
+/// search (falling back to a weighted/approximate search only where exact
+/// search thrashes on the tightest boards). Index 0 = level 1. Drives both
+/// star grading ([soloStars]) and the actual pass/fail cap ([soloMoveLimit])
+/// — the previous `soloPar(colors, empty)` was an explicit placeholder
+/// formula that was never even wired up as a limit, only used for stars.
+const List<int> kSoloMovePar = [
+  12, 14, 11, 12, 12, 12, 11, 12, 12, 12, 13, 12, 13, 12, 11, 13, 12, 13, 12, 14,
+  16, 15, 15, 16, 16, 16, 13, 17, 14, 16, 16, 16, 16, 16, 15, 14, 16, 13, 13, 16,
+  16, 15, 14, 14, 16, 15, 17, 16, 14, 17, 16, 16, 14, 16, 15, 16, 15, 19, 17, 17,
+  19, 19, 19, 19, 20, 18, 19, 20, 19, 19, 17, 17, 17, 21, 20, 19, 17, 19, 17, 20,
+  20, 17, 19, 18, 19, 19, 17, 18, 18, 17, 17, 18, 20, 19, 23, 21, 20, 22, 20, 22,
+  20, 22, 21, 21, 19, 20, 22, 18, 22, 24, 22, 24, 23, 21, 23, 20, 20, 22, 21, 21,
+  22, 21, 22, 21, 22, 23, 22, 21, 20, 22, 22, 23, 25, 26, 25, 24, 24, 25, 26, 25,
+  27, 24, 24, 24, 23, 26, 24, 24, 26, 25, 27, 25, 25, 26, 24, 24, 25, 26, 26, 25,
+  25, 25, 25, 22, 28, 23, 23, 26, 26, 30, 27, 28, 28, 29, 28, 29, 29, 25, 26, 28,
+  28, 26, 26, 30, 29, 25, 27, 27, 27, 29, 30, 28, 29, 28, 25, 27, 26, 28, 28, 27,
+  26, 25, 28, 24, 26, 26, 32, 28, 30, 29, 30, 30, 30, 29, 28, 32, 31, 29, 26, 31,
+  29, 32, 30, 30, 30, 24, 24, 24, 24, 24, 24, 24, 24, 24, 26, 26, 26, 26, 26, 24,
+  24, 24, 24, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 27, 26,
+  26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,
+  26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 25,
+];
+
+/// A small number of levels (measured, not guessed) whose default
+/// `modeSeed('solo', n)` board turned out to be mathematically unreachable
+/// from solved by *any* forward move sequence — a genuine bug in
+/// `genTubes`' reverse-move scrambler (taking a whole top run when a
+/// different colour sits underneath isn't actually invertible by a single
+/// forward pour, and it gets more likely as spare capacity shrinks —
+/// confirmed via exhaustive search, and it hits almost the entire empty=1
+/// tier, levels 226-300). Rather than touch `genTubes` itself (shared with
+/// the duel modes, and JS-parity-tested), affected levels get an alternate
+/// seed instead — see [soloLevelSeed]. The value is a seed *offset*, found
+/// by the same measurement script trying +1, +2, ... until the board is
+/// solvable.
+const Map<int, int> kSoloSeedOverride = {
+  86: 1, 161: 1, 180: 1,
+  226: 29, 227: 28, 228: 27, 229: 26, 230: 4, 231: 3, 232: 2, 233: 1,
+  235: 4, 236: 3, 237: 2, 238: 1,
+  240: 46, 241: 45, 242: 44, 243: 43, 244: 35, 245: 34, 246: 33, 247: 32,
+  248: 31, 249: 30, 250: 8, 251: 7, 252: 6, 253: 5, 254: 4, 255: 3, 256: 2,
+  257: 1, 259: 15, 260: 84, 261: 83, 262: 82, 263: 81, 264: 80, 265: 79,
+  266: 78, 267: 77, 268: 76, 269: 75, 270: 53, 271: 52, 272: 51, 273: 50,
+  274: 49, 275: 48, 276: 47, 277: 46, 278: 45, 279: 44, 280: 22, 281: 21,
+  282: 63, 283: 62, 284: 61, 285: 60, 286: 59, 287: 58, 288: 57, 289: 56,
+  290: 34, 291: 33, 292: 32, 293: 31, 294: 30, 295: 29, 296: 28, 297: 27,
+  298: 26, 299: 25, 300: 52,
+};
+
+/// The actual seed to generate a Solo *level* board with — [modeSeed] offset
+/// by [kSoloSeedOverride] where the default board was unsolvable. Daily
+/// Challenge and Shuffle use their own seeding and never consult this.
+int soloLevelSeed(int levelNumber) =>
+    modeSeed('solo', levelNumber) + (kSoloSeedOverride[levelNumber] ?? 0);
+
+int soloMovePar(int levelNumber) => kSoloMovePar[levelNumber - 1];
+
+/// The real pass/fail move cap for a Solo level: measured near-optimal play
+/// plus slack, so a good-but-imperfect solve still passes — only truly
+/// wandering (the "infinite moves, never lose" gap this replaces) fails.
+int soloMoveLimit(int levelNumber) => (soloMovePar(levelNumber) * 1.6).ceil();
 
 int soloStars({required bool usedHint, required int moves, required int par}) {
   if (usedHint) return 1;

@@ -82,6 +82,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
   void _initBoard() {
     final int seed;
     final int colors, empty;
+    int? moveLimit;
     if (widget.isDaily) {
       final ds = _todayStr(DateTime.now());
       seed = dailySeed(ds);
@@ -89,9 +90,10 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
       empty = 2;
     } else if (widget.levelNumber != null) {
       final cfg = soloCfg(widget.levelNumber!);
-      seed = modeSeed('solo', widget.levelNumber!);
+      seed = soloLevelSeed(widget.levelNumber!);
       colors = cfg.colors;
       empty = cfg.empty;
+      moveLimit = soloMoveLimit(widget.levelNumber!);
     } else {
       seed =
           (DateTime.now().millisecondsSinceEpoch % 900000) +
@@ -99,7 +101,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
       colors = widget.shuffleColors;
       empty = 2;
     }
-    board = SoloBoard(seed: seed, colors: colors, empty: empty);
+    board = SoloBoard(seed: seed, colors: colors, empty: empty, moveLimit: moveLimit);
     _tubeKeys = List.generate(board.tubes.length, (_) => GlobalKey());
     _startedAt = null;
     starsEarned = null;
@@ -204,7 +206,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
       return;
     }
     if (widget.levelNumber == null) return; // Shuffle: no economy hooks
-    final par = soloPar(board.colors, board.empty);
+    final par = soloMovePar(widget.levelNumber!);
     final stars = soloStars(
       usedHint: board.usedHint,
       moves: board.moves,
@@ -352,7 +354,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
                   ),
                   _Stat(
                     label: 'MOVES',
-                    value: '${board.moves}',
+                    value: board.moveLimit != null ? '${board.moves}/${board.moveLimit}' : '${board.moves}',
                     alignCenter: true,
                   ),
                   _Stat(

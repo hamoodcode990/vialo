@@ -12,13 +12,21 @@ class SoloBoard {
   final List<List<int>> tubes;
   final List<List<List<int>>> _undoStack = [];
 
+  /// The real pass/fail cap ([soloMoveLimit] in level_curves.dart) — null
+  /// for Daily/Shuffle, which have never cost a life on failure and stay
+  /// exempt (see solo_game_screen.dart's `_onFailed`). Without this, a Solo
+  /// level had no way to fail short of a genuine dead-end board state, so a
+  /// player could pour forever and never lose — this is what actually
+  /// closes that gap.
+  final int? moveLimit;
+
   int moves = 0;
   bool done = false;
   bool failed = false;
   bool usedHint = false;
   int freeUndo = 1;
 
-  SoloBoard({required this.seed, required this.colors, required this.empty})
+  SoloBoard({required this.seed, required this.colors, required this.empty, this.moveLimit})
       : tubes = genTubes(seed, colors, empty);
 
   bool legal(int s, int d) {
@@ -53,7 +61,7 @@ class SoloBoard {
     moves++;
     if (solved) {
       done = true;
-    } else if (stuck) {
+    } else if (stuck || (moveLimit != null && moves >= moveLimit!)) {
       failed = true;
     }
     return n;

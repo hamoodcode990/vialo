@@ -113,5 +113,70 @@ void main() {
       final b = SoloBoard(seed: 1, colors: 4, empty: 3);
       expect(b.legal(0, 0), isFalse, reason: 'same tube');
     });
+
+    test('moveLimit fails the board once reached without solving — the actual pass/fail cap', () {
+      final b = SoloBoard(seed: 1, colors: 4, empty: 3, moveLimit: 1);
+      final m = b.hintMove()!;
+      b.pour(m.$1, m.$2);
+      expect(b.moves, 1);
+      if (!b.done) {
+        // A 4-colour/3-empty board never solves in exactly 1 move, so this
+        // should always hold — asserted rather than assumed.
+        expect(b.failed, isTrue);
+      }
+    });
+
+    test('no moveLimit (Daily/Shuffle) never fails on move count alone', () {
+      final b = SoloBoard(seed: 1, colors: 4, empty: 3);
+      final plan = _solve(b.tubes, 200000)!;
+      // Play every move except the last, confirming failed never trips
+      // purely from racking up moves when moveLimit is null.
+      for (final (s, d) in plan.sublist(0, plan.length - 1)) {
+        b.pour(s, d);
+        expect(b.failed, isFalse);
+      }
+    });
+  });
+
+  group('Solo level content (level_curves.dart)', () {
+    test('kSoloMovePar has one measured entry per level', () {
+      expect(kSoloMovePar.length, kLevelCounts['solo']);
+      for (final par in kSoloMovePar) {
+        expect(par, greaterThan(0));
+      }
+    });
+
+    test('soloLevelSeed matches modeSeed for levels with no override', () {
+      expect(kSoloSeedOverride.containsKey(1), isFalse);
+      expect(soloLevelSeed(1), modeSeed('solo', 1));
+    });
+
+    test('soloLevelSeed applies the override offset for affected levels', () {
+      for (final entry in kSoloSeedOverride.entries) {
+        expect(soloLevelSeed(entry.key), modeSeed('solo', entry.key) + entry.value);
+      }
+    });
+
+    test('every seed-overridden level is actually solvable now (the bug this fixes)', () {
+      // Spot-check rather than all 75 — this is the same class of expensive
+      // check tool/measure_solo_par.dart already did exhaustively offline;
+      // this just guards against the override table and genTubes silently
+      // drifting out of sync with each other.
+      for (final n in [86, 161, 180, 226, 245, 260, 282, 300]) {
+        final cfg = soloCfg(n);
+        final tubes = genTubes(soloLevelSeed(n), cfg.colors, cfg.empty);
+        final plan = _solve(tubes, 300000);
+        expect(plan, isNotNull, reason: 'level $n should be solvable after its seed override');
+      }
+    });
+
+    test('soloMoveLimit gives real slack over par, not an effectively-infinite cap', () {
+      for (final n in [1, 100, 200, 300]) {
+        final par = soloMovePar(n);
+        final limit = soloMoveLimit(n);
+        expect(limit, greaterThan(par), reason: 'level $n');
+        expect(limit, lessThan(par * 3), reason: 'level $n — should be a real cap, not effectively infinite');
+      }
+    });
   });
 }

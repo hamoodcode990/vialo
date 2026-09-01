@@ -79,9 +79,14 @@ final _soloSteps = [
     body: 'A pour only works onto an empty tube or one already topped with the same colour. Fill a tube with one colour and it clears.',
     visual: _legalIllegalVisual,
   ),
+  const TutorialStep(
+    title: 'Mind your move count',
+    body: "Every level has a move budget, set by its own ideal solution — wander past it without finishing and the attempt fails, the same as any other loss.",
+    visual: _soloMoveLimitVisual,
+  ),
   TutorialStep(
     title: 'Stars, hints, and undo',
-    body: 'Finish in fewer moves to earn more stars. Stuck? Spend coins on a hint, or undo your last pour.',
+    body: 'Finish inside the budget to earn more stars. Stuck? Spend coins on a hint, or undo your last pour.',
     visual: (_) => const Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -96,6 +101,19 @@ final _soloSteps = [
     ),
   ),
 ];
+
+Widget _soloMoveLimitVisual(BuildContext context) => TutorialLoopDemo(frames: [
+      Row(mainAxisSize: MainAxisSize.min, children: const [
+        Icon(Icons.pending_outlined, color: AppColors.mute, size: 22),
+        SizedBox(width: 8),
+        Text('14 / 26 moves', style: TextStyle(color: AppColors.mute, fontSize: 13, fontWeight: FontWeight.w700)),
+      ]),
+      Row(mainAxisSize: MainAxisSize.min, children: const [
+        Icon(Icons.warning_rounded, color: AppColors.hot, size: 22),
+        SizedBox(width: 8),
+        Text('26 / 26 — failed', style: TextStyle(color: AppColors.hot, fontSize: 13, fontWeight: FontWeight.w800)),
+      ]),
+    ]);
 
 Widget _legalIllegalVisual(BuildContext context) => TutorialLoopDemo(frames: [
       Row(mainAxisSize: MainAxisSize.min, children: const [
