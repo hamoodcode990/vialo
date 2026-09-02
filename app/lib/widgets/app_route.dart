@@ -27,7 +27,14 @@ class AppRoute<T> extends PageRouteBuilder<T> {
             final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
             return SlideTransition(
               position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(curved),
-              child: child,
+              // A translate is only as cheap as the layer it's moving. Without
+              // this, Flutter can still decide the incoming page's own
+              // subtree needs re-painting on some frames of the slide (its
+              // very first appearance isn't yet a settled, cacheable layer)
+              // instead of purely repositioning an already-rasterized one —
+              // exactly the kind of frame drop that reads as the previous
+              // page still showing through for a beat.
+              child: RepaintBoundary(child: child),
             );
           },
         );

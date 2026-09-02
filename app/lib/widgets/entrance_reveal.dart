@@ -30,7 +30,7 @@ class EntranceReveal extends StatefulWidget {
     super.key,
     required this.child,
     this.delay = Duration.zero,
-    this.duration = const Duration(milliseconds: 320),
+    this.duration = const Duration(milliseconds: 240),
   });
 
   @override

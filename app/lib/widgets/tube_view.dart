@@ -185,7 +185,7 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
     );
 
     return EntranceReveal(
-      delay: Duration(milliseconds: (widget.index * 40).clamp(0, 480)),
+      delay: Duration(milliseconds: (widget.index * 25).clamp(0, 260)),
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedOpacity(

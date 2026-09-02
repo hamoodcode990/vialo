@@ -119,7 +119,7 @@ class _FuseCellViewState extends State<FuseCellView>
     final col = widget.index % widget.gridWidth;
 
     return EntranceReveal(
-      delay: Duration(milliseconds: ((row + col) * 26).clamp(0, 480)),
+      delay: Duration(milliseconds: ((row + col) * 22).clamp(0, 260)),
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedOpacity(
