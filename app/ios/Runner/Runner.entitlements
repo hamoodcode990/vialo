@@ -1,26 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  CLAUDE.md Step 7 (Sign in with Apple + iCloud progress sync). This file is
-  NOT wired into the Xcode project yet — that wiring (setting
-  CODE_SIGN_ENTITLEMENTS in project.pbxproj, and registering the
-  capabilities against your Apple Developer Team ID) has to happen through
-  Xcode's Signing & Capabilities tab, not by hand-editing project.pbxproj:
-  Xcode also registers the capability with the App ID on the Developer
-  portal at the same time, which no amount of local file editing can do.
-
-  Steps (needs a Mac + your Apple Developer account):
-    1. Open ios/Runner.xcworkspace in Xcode, select the Runner target.
-    2. Signing & Capabilities -> "+ Capability" -> add "Sign in with Apple".
-    3. "+ Capability" -> add "iCloud" -> check "Key-value storage".
-    4. Xcode will regenerate/overwrite this file to match — treat the
-       version below as a reference, not the final source of truth.
+  CLAUDE.md Step 7 (Sign in with Apple + iCloud progress sync). Capabilities
+  are registered directly on the App ID at developer.apple.com (Sign In with
+  Apple, iCloud/CloudKit, container iCloud.com.sablastudio.vialo) and
+  declared here; CODE_SIGN_ENTITLEMENTS points at this file for the Runner
+  target's Debug and Release configs in project.pbxproj.
 -->
 <plist version="1.0">
 <dict>
 	<key>com.apple.developer.applesignin</key>
 	<array>
 		<string>Default</string>
+	</array>
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.com.sablastudio.vialo</string>
+	</array>
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
 	</array>
 	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
 	<string>$(TeamIdentifierPrefix)com.sablastudio.vialo</string>

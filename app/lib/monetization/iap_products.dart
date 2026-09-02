@@ -7,7 +7,10 @@ library;
 
 const String kProductRefillLives = 'vialo_refill_lives';
 const String kProductUnlimited2h = 'vialo_unlimited_lives_2h';
-const String kProductUnlimited7d = 'vialo_unlimited_lives_7d';
+// Apple wouldn't release com.sablastudio.vialo.lives.unlimited7d after a
+// deleted draft used it — App Store Connect's real, permanent id for this
+// product is com.sablastudio.vialo.pass.7d instead.
+const String kProductUnlimited7d = 'com.sablastudio.vialo.pass.7d';
 const String kProductCoins500 = 'vialo_coins_500';
 const String kProductCoins1200 = 'vialo_coins_1200';
 const String kProductCoins3000 = 'vialo_coins_3000';

@@ -15,10 +15,10 @@
 class MonetizationConfig {
   MonetizationConfig._();
 
-  /// TODO(shipping): replace with the real RevenueCat public SDK key for
-  /// this app (RevenueCat dashboard → Project Settings → API Keys → Apple
-  /// App Store). Get the free account at https://app.revenuecat.com.
-  static const String revenueCatApiKeyIOS = 'REVENUECAT_API_KEY_IOS_PLACEHOLDER';
+  /// RevenueCat's public SDK key (safe to embed client-side — it's scoped
+  /// to submitting receipts/purchases for this app, not to the account's
+  /// secret/server-side key, which never belongs in the repo).
+  static const String revenueCatApiKeyIOS = 'appl_ecKlqDEaULwnldAUcSKxyYVTuOf';
 
   static bool get isRevenueCatConfigured =>
       revenueCatApiKeyIOS != 'REVENUECAT_API_KEY_IOS_PLACEHOLDER' && revenueCatApiKeyIOS.isNotEmpty;
