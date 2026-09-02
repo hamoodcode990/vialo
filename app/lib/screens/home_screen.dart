@@ -57,8 +57,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
     final avatar = avatarById(profile.avatarId);
-    final nextMs = profile.nextLifeMs(DateTime.now().millisecondsSinceEpoch);
-    final countdown = nextMs > 0 ? _fmtCountdown(nextMs) : null;
     final doneToday = profile.dailyDoneToday(DateTime.now());
     final s = profile.stats;
     final totalGames = s.w + s.l + s.fw + s.fl + s.sw + s.sl + s.rw + s.rl;
@@ -74,10 +72,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
             children: [
               HeaderBar(
                 avatar: avatar,
-                lives: profile.lives,
-                lifeMax: PlayerProfile.lifeMax,
-                countdownText: countdown,
-                coins: profile.coins,
+                profile: profile,
                 onAvatarTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const ProfileScreen())),
                 onLivesTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen())),
                 onCoinsTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen())),
@@ -195,13 +190,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       ),
     );
   }
-}
-
-String _fmtCountdown(int ms) {
-  final s = (ms / 1000).ceil();
-  final h = s ~/ 3600;
-  final m = (s % 3600) ~/ 60;
-  return h > 0 ? '${h}h ${m}m' : '${m}m';
 }
 
 /// A compact square tile in the 2x2 "Duels" grid — one tap target, always to

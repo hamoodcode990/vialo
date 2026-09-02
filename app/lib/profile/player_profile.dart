@@ -15,6 +15,13 @@ class PlayerProfile {
   static const int lifeMax = 5;
   static const int lifeRegenMs = 2 * 60 * 60 * 1000; // 2 hours
 
+  /// Flat coin reward for replaying an already-cleared level — small and
+  /// deliberately not star-scaled (same order of magnitude as Quick Match's
+  /// already-nerfed bot bonus, see kBotBonus in duel_tube_game_screen.dart),
+  /// since the level ladder has no cooldown or cap on re-entering a level
+  /// you've already beaten.
+  static const int levelReplayCoinReward = 2;
+
   String name;
   String avatarId;
 
@@ -126,6 +133,15 @@ class PlayerProfile {
     return remain < 0 ? 0 : remain;
   }
 
+  /// Milliseconds until *every* life is back (not just the next one), or 0
+  /// if already full / unlimited. [nextLifeMs] plus however many additional
+  /// full regen ticks are still needed after that first one lands.
+  int timeUntilFullMs(int nowMs) {
+    if (lives >= lifeMax || livesUnlimited(nowMs)) return 0;
+    final missing = lifeMax - lives;
+    return nextLifeMs(nowMs) + (missing - 1) * lifeRegenMs;
+  }
+
   /// A life is spent on failing a level-ladder attempt — never on starting
   /// or winning. No-op while an unlimited-lives purchase is active.
   void loseLife(int nowMs) {
@@ -162,9 +178,16 @@ class PlayerProfile {
       levelNumber <= (levelProgress[mode] ?? 1);
 
   /// Records a level win: keeps the best star rating for that level, bumps
-  /// [levelProgress] if this was the unlock frontier, and awards
-  /// `10 + 5*stars` coins. Mirrors the shared shape of decant.html's
-  /// `tapSolo` win branch and duel `finish()` level-run branch.
+  /// [levelProgress] if this was the unlock frontier, and awards coins —
+  /// the full first-clear reward only the first time a level is beaten;
+  /// every replay after that (the level ladder has no cooldown and no cap
+  /// on how many times you can re-enter an already-cleared level) pays only
+  /// [kLevelReplayCoinReward], not the full amount again. Previously this
+  /// paid the full reward on every replay with no cap at all — across
+  /// hundreds of levels across five modes, that was an unlimited free-coin
+  /// exploit (just keep re-winning any level you've already beaten), not a
+  /// progression reward. Mirrors the shared shape of decant.html's `tapSolo`
+  /// win branch and duel `finish()` level-run branch.
   ///
   /// For Solo specifically, also detects any avatar-unlock milestones the
   /// new frontier just crossed (avatar_unlocks.dart) — [levelProgress]
@@ -182,6 +205,7 @@ class PlayerProfile {
     final byLevel = stars.putIfAbsent(mode, () => <String, int>{});
     final key = levelNumber.toString();
     final prev = byLevel[key] ?? 0;
+    final isFirstClear = prev == 0;
     byLevel[key] = starsEarned > prev ? starsEarned : prev;
 
     final oldProgress = levelProgress[mode] ?? 1;
@@ -193,7 +217,7 @@ class PlayerProfile {
       levelProgress[mode] = newProgress;
     }
 
-    final coinsEarned = 10 + 5 * starsEarned;
+    final coinsEarned = isFirstClear ? (5 + 3 * starsEarned) : levelReplayCoinReward;
     addCoins(coinsEarned);
 
     final newlyUnlocked = <String>[];

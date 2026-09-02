@@ -21,7 +21,7 @@ class LevelNodeData {
 /// for) and node size varies slightly along the same wave to suggest depth,
 /// with a smoothed curve drawn through every node center. Self-contained
 /// and lazily built per chapter by the caller (a ListView.builder) so this
-/// never has to lay out all 300 Solo levels at once.
+/// never has to lay out all 350 Solo levels at once.
 class LevelRoadSection extends StatelessWidget {
   final Chapter chapter;
   final List<LevelNodeData> nodes;
@@ -155,7 +155,7 @@ class _LevelNode extends StatelessWidget {
                 color: locked ? AppColors.ink2 : null,
                 // Locked nodes are flat/inert (just a circle + lock icon) and
                 // are the large majority of nodes on any level-road screen —
-                // most of a mode's 100-300 levels sit past the unlock
+                // most of a mode's 100-350 levels sit past the unlock
                 // frontier. A blurred BoxShadow on every one of them, on top
                 // of the completed/current nodes that actually earn a glow,
                 // was a lot of simultaneous blur for the compositor on

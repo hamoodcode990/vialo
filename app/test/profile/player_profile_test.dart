@@ -66,6 +66,29 @@ void main() {
     });
   });
 
+  group('timeUntilFullMs', () {
+    test('0 when already full', () {
+      final p = PlayerProfile(lives: PlayerProfile.lifeMax, livesUpdatedAt: 0);
+      expect(p.timeUntilFullMs(0), 0);
+    });
+
+    test('0 while unlimited lives are active', () {
+      final p = PlayerProfile(lives: 1, livesUpdatedAt: 0, tempLivesUntil: 10 * _hour);
+      expect(p.timeUntilFullMs(_hour), 0);
+    });
+
+    test('one life missing equals nextLifeMs exactly', () {
+      final p = PlayerProfile(lives: PlayerProfile.lifeMax - 1, livesUpdatedAt: 0);
+      expect(p.timeUntilFullMs(0), p.nextLifeMs(0));
+    });
+
+    test('multiple lives missing adds a full regen tick per extra life', () {
+      final p = PlayerProfile(lives: PlayerProfile.lifeMax - 3, livesUpdatedAt: 0);
+      // 3 lives missing: the first tick (nextLifeMs) plus 2 more full ticks.
+      expect(p.timeUntilFullMs(0), p.nextLifeMs(0) + 2 * (2 * _hour));
+    });
+  });
+
   group('life spending — never on start or win', () {
     test('loseLife decrements by exactly one, floor 0', () {
       final p = PlayerProfile(lives: 1, livesUpdatedAt: 0);
@@ -146,11 +169,32 @@ void main() {
       expect(p.isLevelUnlocked('recipe', 3), isFalse);
     });
 
-    test('coins awarded are 10 + 5*stars', () {
+    test('first-clear coins awarded are 5 + 3*stars', () {
       final p = PlayerProfile(livesUpdatedAt: 0, coins: 0);
       final result = p.recordLevelWin('split', 1, 3);
-      expect(result.coinsEarned, 25);
-      expect(p.coins, 25);
+      expect(result.coinsEarned, 14);
+      expect(p.coins, 14);
+    });
+
+    test('replaying an already-cleared level pays only the small flat replay reward, not the full amount again', () {
+      final p = PlayerProfile(livesUpdatedAt: 0, coins: 0);
+      final first = p.recordLevelWin('split', 1, 3);
+      expect(first.coinsEarned, 14);
+      final replay = p.recordLevelWin('split', 1, 3);
+      expect(replay.coinsEarned, PlayerProfile.levelReplayCoinReward);
+      expect(p.coins, 14 + PlayerProfile.levelReplayCoinReward);
+      // The old bug: replaying paid the full reward every single time, an
+      // unlimited free-coin exploit across hundreds of levels.
+      expect(replay.coinsEarned, isNot(14));
+    });
+
+    test('replaying with a worse star rating still only pays the flat replay reward', () {
+      final p = PlayerProfile(livesUpdatedAt: 0, coins: 0);
+      p.recordLevelWin('split', 1, 3);
+      final replay = p.recordLevelWin('split', 1, 1);
+      expect(replay.coinsEarned, PlayerProfile.levelReplayCoinReward);
+      // Best-ever star rating is still kept, independent of the coin reward.
+      expect(p.starsFor('split', 1), 3);
     });
   });
 

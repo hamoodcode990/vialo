@@ -7,12 +7,22 @@ library;
 import 'constants.dart';
 
 const Map<String, int> kLevelCounts = {
-  'solo': 300,
+  'solo': 350,
   'pour': 150,
   'split': 150,
   'fuse': 100,
   'recipe': 100,
 };
+
+/// Solo's original design size — kept fixed (not read from
+/// [kLevelCounts]) so levels 1-300 keep their exact original difficulty,
+/// measured pars, and seed overrides as the ladder grows past it. Levels
+/// beyond it ([soloCfg] extrapolating `t` past 1.0) continue the same
+/// curve rather than being squeezed into a rescaled 1..350 range, which
+/// would silently change the puzzle on every single one of the first 300
+/// levels — store screenshots/marketing said "300+ levels", so this only
+/// ever adds levels past that mark, never renumbers or reshapes it.
+const int kSoloOriginalLevelCount = 300;
 
 /// Deterministic per-level seed: same board for every player, every time.
 /// Bit-for-bit port of decant.html's `modeSeed` (32-bit string hash).
@@ -45,7 +55,7 @@ class SoloLevelConfig {
 }
 
 SoloLevelConfig soloCfg(int n) {
-  final t = (n - 1) / (kLevelCounts['solo']! - 1);
+  final t = (n - 1) / (kSoloOriginalLevelCount - 1);
   final c = (4 + t * 8).round();
   final e = (3 - t * 2).round();
   return SoloLevelConfig(c, e < 1 ? 1 : e);
@@ -105,6 +115,11 @@ const List<int> kSoloMovePar = [
   24, 24, 24, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 27, 26,
   26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,
   26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 25,
+  // Levels 301-350, added so "300+ levels" is literally true rather than an
+  // exact 300 — same curve, same measurement, extending soloCfg's t past 1.0.
+  25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 37, 37,
+  37, 37, 37, 37, 37, 37, 37, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
+  32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
 ];
 
 /// A small number of levels (measured, not guessed) whose default
@@ -114,7 +129,8 @@ const List<int> kSoloMovePar = [
 /// different colour sits underneath isn't actually invertible by a single
 /// forward pour, and it gets more likely as spare capacity shrinks —
 /// confirmed via exhaustive search, and it hits almost the entire empty=1
-/// tier, levels 226-300). Rather than touch `genTubes` itself (shared with
+/// tier — levels 226 onward, including the 301-350 extension). Rather than
+/// touch `genTubes` itself (shared with
 /// the duel modes, and JS-parity-tested), affected levels get an alternate
 /// seed instead — see [soloLevelSeed]. The value is a seed *offset*, found
 /// by the same measurement script trying +1, +2, ... until the board is
@@ -131,6 +147,13 @@ const Map<int, int> kSoloSeedOverride = {
   282: 63, 283: 62, 284: 61, 285: 60, 286: 59, 287: 58, 288: 57, 289: 56,
   290: 34, 291: 33, 292: 32, 293: 31, 294: 30, 295: 29, 296: 28, 297: 27,
   298: 26, 299: 25, 300: 52,
+  // Levels 301-350 (added past the original 300 — see kSoloOriginalLevelCount).
+  301: 51, 302: 50, 303: 49, 304: 48, 305: 47, 306: 46, 307: 45, 308: 44,
+  309: 43, 310: 21, 311: 20, 312: 19, 313: 18, 314: 17, 315: 16, 316: 15,
+  317: 14, 318: 13, 319: 29, 320: 7, 321: 6, 322: 5, 323: 4, 324: 3, 325: 2,
+  326: 1, 328: 65, 329: 64, 330: 42, 331: 41, 332: 40, 333: 39, 334: 38,
+  335: 37, 336: 36, 337: 35, 338: 34, 339: 33, 340: 11, 341: 10, 342: 9,
+  343: 8, 344: 7, 345: 6, 346: 5, 347: 4, 348: 3, 349: 2, 350: 171,
 };
 
 /// The actual seed to generate a Solo *level* board with — [modeSeed] offset

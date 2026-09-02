@@ -36,6 +36,26 @@ Color shade(Color c, int delta) {
   );
 }
 
+// A shared "essence" undertone every liquid blends toward near the bottom of
+// its vial — a deep plum-black rather than a paint-chip darken of the same
+// hue. This is what actually reads as "a mixed liquid in a glass vial" (one
+// consistent depth colour every essence sits in) instead of "a flat colour
+// with a gradient slapped on" — CLAUDE.md's tube_palettes.dart hex values
+// (deuteranopia-audited, distance-measured) are untouched; only how a
+// resolved colour gets *painted* changes here.
+const _essenceUndertone = Color(0xFF1A0E2E);
+
+/// A cheap, tasteful "blend" for one liquid segment: a touch lighter/warmer
+/// at the surface (a highlight the essence catches), true to the palette
+/// colour through the body, and blended toward [_essenceUndertone] — not a
+/// flat darken — near the bottom, so every colour reads as one liquid
+/// sharing the same glass rather than a solid paint chip.
+List<Color> _essenceGradient(Color base) => [
+      Color.lerp(base, Colors.white, 0.18)!,
+      base,
+      Color.lerp(base, _essenceUndertone, 0.42)!,
+    ];
+
 /// Renders the glass tube outline (rounded top, more-rounded bottom —
 /// decant.html's `border-radius: 16% 16% 40% 40%` flask shape) with a
 /// specular highlight streak, plus the stacked liquid segments with a
@@ -84,7 +104,8 @@ class TubePainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [seg.color, shade(seg.color, -18)],
+          colors: _essenceGradient(seg.color),
+          stops: const [0.0, 0.4, 1.0],
         ).createShader(rect);
       if (sealed) paint.color = paint.color.withValues(alpha: 0.62);
 
@@ -100,6 +121,27 @@ class TubePainter extends CustomPainter {
         canvas.drawRect(rect, paint);
       }
       bottomY = top;
+    }
+
+    // A single soft diagonal sheen across every liquid segment at once —
+    // one extra shader fill per tube, not per segment, so this stays as
+    // cheap as the rest of the paint. A warm gold catch-light (this game's
+    // established accent for "something precious", not a random tint) is
+    // what actually reads as "an essence", not a flat colour swatch.
+    if (segments.isNotEmpty) {
+      final sheen = Paint()
+        ..blendMode = BlendMode.plus
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.gold.withValues(alpha: 0.10),
+            Colors.transparent,
+            AppColors.gold.withValues(alpha: 0.05),
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ).createShader(Rect.fromLTRB(0, 0, w, h));
+      canvas.drawRect(Rect.fromLTRB(0, 0, w, h), sheen);
     }
     canvas.restore();
 

@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../monetization/iap_products.dart';
 import '../monetization/monetization_controller.dart';
+import '../profile/player_profile.dart';
 import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/tube_palettes.dart';
+import '../widgets/header_bar.dart' show formatLifeCountdown;
 
 /// IAP + rewarded-ad + cosmetics store. Real purchases/ads route through
 /// [MonetizationController] (RevenueCat/AdMob); when the store isn't
@@ -52,6 +54,7 @@ class StoreScreen extends ConsumerWidget {
               ),
             ],
             const _SectionLabel('LIVES'),
+            _LivesStatusCard(profile: profile),
             for (final product in kLivesProducts)
               _IapRow(
                 title: product.title,
@@ -131,6 +134,71 @@ class _SectionLabel extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.sm),
       child: Text(text, style: const TextStyle(fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w800, color: AppColors.mute)),
+    );
+  }
+}
+
+/// A clear, at-a-glance status for the one thing this whole section is
+/// about — how many lives you have and exactly when the next (and last)
+/// one lands. The header pill shows a compact version of this everywhere;
+/// this is the detailed version, in the one place a player actually lands
+/// when they tap it wanting to know more.
+class _LivesStatusCard extends StatelessWidget {
+  final PlayerProfile profile;
+  const _LivesStatusCard({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final unlimited = profile.livesUnlimited(nowMs);
+    final full = profile.lives >= PlayerProfile.lifeMax;
+
+    String status;
+    if (unlimited) {
+      status = 'Unlimited — ${formatLifeCountdown(profile.tempLivesUntil - nowMs)} left';
+    } else if (full) {
+      status = 'Lives full';
+    } else {
+      final next = 'Next life in ${formatLifeCountdown(profile.nextLifeMs(nowMs))}';
+      final missing = PlayerProfile.lifeMax - profile.lives;
+      status = missing > 1 ? '$next · all full in ${formatLifeCountdown(profile.timeUntilFullMs(nowMs))}' : next;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+      decoration: BoxDecoration(
+        color: AppColors.ink2,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.life, width: 3),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (unlimited)
+                const Text('❤️ ∞', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.life))
+              else
+                Row(
+                  children: [
+                    for (var i = 0; i < PlayerProfile.lifeMax; i++)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 3),
+                        child: Icon(
+                          i < profile.lives ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          size: 20,
+                          color: i < profile.lives ? AppColors.life : AppColors.outline,
+                        ),
+                      ),
+                  ],
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(status, style: const TextStyle(fontSize: 12, color: AppColors.mute, fontWeight: FontWeight.w600)),
+        ],
+      ),
     );
   }
 }

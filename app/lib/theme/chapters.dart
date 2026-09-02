@@ -48,6 +48,8 @@ const List<({String title, String blurb})> _kSoloChapterCopy = [
   (title: 'The Violet Hour', blurb: "Twilight work, for steady hands only."),
   (title: "Corvel's Vault", blurb: "The final formulas — everything you've learned, at once."),
   (title: 'The Last Decant', blurb: "One board left. Finish it."),
+  (title: 'One More Bottle', blurb: "Corvel never said 300 was the end. She just stopped counting."),
+  (title: 'The Uncounted', blurb: "Off the official ledger now. Nobody's keeping score but you."),
 ];
 
 /// Pour's story: sort-duel rivalries, climbing the atelier's pecking order

@@ -50,9 +50,7 @@ class ModeHubScreen extends ConsumerWidget {
             children: [
               HeaderBar(
                 avatar: avatar,
-                lives: profile.lives,
-                lifeMax: 5,
-                coins: profile.coins,
+                profile: profile,
                 onAvatarTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const ProfileScreen())),
                 onLivesTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen())),
                 onCoinsTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen())),
