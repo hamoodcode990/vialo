@@ -8,10 +8,9 @@
 /// decant.html's reference implementation already uses, so the app stays
 /// fully testable without real credentials.
 ///
-/// The AdMob values below are *not* placeholders — they're Google's own
-/// published test identifiers, safe to ship in debug builds and meant to be
-/// used exactly like this during development:
-/// https://developers.google.com/admob/ios/test-ads
+/// The AdMob ad unit id below is the developer's real one (AdMob account
+/// configured, matching real App ID in ios/Runner/Info.plist's
+/// GADApplicationIdentifier) — no longer Google's test identifiers.
 class MonetizationConfig {
   MonetizationConfig._();
 
@@ -23,8 +22,8 @@ class MonetizationConfig {
   static bool get isRevenueCatConfigured =>
       revenueCatApiKeyIOS != 'REVENUECAT_API_KEY_IOS_PLACEHOLDER' && revenueCatApiKeyIOS.isNotEmpty;
 
-  /// Google's published test rewarded-ad unit id (iOS). Swap for the real
-  /// ad unit id from your AdMob account before release — see also the
-  /// matching `GADApplicationIdentifier` in ios/Runner/Info.plist.
-  static const String rewardedAdUnitIdIOS = 'ca-app-pub-3940256099942544/1712485313';
+  /// Real rewarded-ad unit id (iOS) from the developer's AdMob account —
+  /// matching real App ID lives in ios/Runner/Info.plist's
+  /// GADApplicationIdentifier.
+  static const String rewardedAdUnitIdIOS = 'ca-app-pub-9278157393415604/1471194418';
 }

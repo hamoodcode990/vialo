@@ -27,18 +27,20 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<!-- AdMob (Phase 5, rewarded video only — see lib/monetization/).
-	     This is Google's published TEST App ID, safe to ship in debug builds:
-	     https://developers.google.com/admob/ios/test-ads
-	     Swap for the real AdMob App ID from your AdMob account before release. -->
+	     Real App ID from the developer's AdMob account — matching real ad
+	     unit id lives in lib/monetization/monetization_config.dart's
+	     rewardedAdUnitIdIOS. -->
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-9278157393415604~4223526432</string>
 	<key>GADIsAdManagerApp</key>
 	<false/>
-	<!-- Rewarded ads may request the IDFA for ad measurement; App Tracking
-	     Transparency requires a usage description whenever that's possible,
-	     even though this app never tracks across other apps/websites itself. -->
-	<key>NSUserTrackingUsageDescription</key>
-	<string>This identifier is used to show you a rewarded video ad in exchange for in-game lives or coins.</string>
+	<!-- Deliberately no NSUserTrackingUsageDescription / ATT request: the
+	     user chose non-personalized, contextual rewarded ads only for v1
+	     (2026-09-02) — the extra prompt/privacy disclosure/review surface
+	     isn't worth it at launch volume. Having this key present without an
+	     actual requestTrackingAuthorization call is exactly the mismatch
+	     App Store Connect flags, so it must NOT be re-added unless an ATT
+	     call is added alongside it. -->
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>
