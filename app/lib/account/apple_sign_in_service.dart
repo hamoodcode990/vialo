@@ -8,9 +8,15 @@ class SignInResult {
   final String? userId;
   final String? errorMessage;
 
-  const SignInResult._(this.outcome, this.userId, this.errorMessage);
+  /// The one-time authorization code from this sign-in, present only on
+  /// success. Must be exchanged for a refresh token (AppleTokenRelayService)
+  /// within minutes — Apple's codes are short-lived and single-use.
+  final String? authorizationCode;
 
-  factory SignInResult.success(String userId) => SignInResult._(SignInOutcome.success, userId, null);
+  const SignInResult._(this.outcome, this.userId, this.errorMessage, [this.authorizationCode]);
+
+  factory SignInResult.success(String userId, [String? authorizationCode]) =>
+      SignInResult._(SignInOutcome.success, userId, null, authorizationCode);
   factory SignInResult.cancelled() => const SignInResult._(SignInOutcome.cancelled, null, null);
   factory SignInResult.failed(String message) => SignInResult._(SignInOutcome.failed, null, message);
   factory SignInResult.unavailable() =>
@@ -39,7 +45,7 @@ class AppleSignInService {
       final credential = await SignInWithApple.getAppleIDCredential(
         scopes: const [AppleIDAuthorizationScopes.email],
       );
-      return SignInResult.success(credential.userIdentifier ?? '');
+      return SignInResult.success(credential.userIdentifier ?? '', credential.authorizationCode);
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) return SignInResult.cancelled();
       return SignInResult.failed(e.message);

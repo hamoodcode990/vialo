@@ -10,7 +10,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vialo/account/account_controller.dart';
+import 'package:vialo/account/apple_refresh_token_store.dart';
 import 'package:vialo/account/apple_sign_in_service.dart';
+import 'package:vialo/account/apple_token_relay_service.dart';
 import 'package:vialo/account/cloud_profile_sync.dart';
 import 'package:vialo/state/profile_provider.dart';
 
@@ -31,6 +33,44 @@ class _FakeCloudSync extends CloudProfileSync {
     store[key] = json;
     return true;
   }
+
+  @override
+  Future<bool> deleteProfile(String key) async {
+    store.remove(key);
+    return true;
+  }
+}
+
+class _FakeTokenRelay extends AppleTokenRelayService {
+  String? nextRefreshToken;
+  bool revokeSucceeds = true;
+  String? lastExchangedCode;
+  String? lastRevokedToken;
+
+  @override
+  bool get isConfigured => true;
+
+  @override
+  Future<String?> exchangeCodeForRefreshToken(String authorizationCode) async {
+    lastExchangedCode = authorizationCode;
+    return nextRefreshToken;
+  }
+
+  @override
+  Future<bool> revokeRefreshToken(String refreshToken) async {
+    lastRevokedToken = refreshToken;
+    return revokeSucceeds;
+  }
+}
+
+class _FakeTokenStore extends AppleRefreshTokenStore {
+  String? value;
+  @override
+  Future<void> save(String refreshToken) async => value = refreshToken;
+  @override
+  Future<String?> read() async => value;
+  @override
+  Future<void> clear() async => value = null;
 }
 
 void main() {
@@ -39,15 +79,21 @@ void main() {
   late ProviderContainer container;
   late _FakeAppleSignIn fakeSignIn;
   late _FakeCloudSync fakeCloud;
+  late _FakeTokenRelay fakeRelay;
+  late _FakeTokenStore fakeTokenStore;
   late AccountController ctrl;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     fakeSignIn = _FakeAppleSignIn();
     fakeCloud = _FakeCloudSync();
+    fakeRelay = _FakeTokenRelay();
+    fakeTokenStore = _FakeTokenStore();
     container = ProviderContainer(overrides: [
       appleSignInServiceProvider.overrideWithValue(fakeSignIn),
       cloudProfileSyncProvider.overrideWithValue(fakeCloud),
+      appleTokenRelayServiceProvider.overrideWithValue(fakeRelay),
+      appleRefreshTokenStoreProvider.overrideWithValue(fakeTokenStore),
     ]);
     await container.read(profileControllerProvider.future); // wait for the initial load
     ctrl = container.read(accountControllerProvider);
@@ -96,6 +142,41 @@ void main() {
     ctrl.signOut();
     final p = container.read(profileControllerProvider).value!;
     expect(p.appleUserId, isNull);
+    expect(p.coins, 100);
+  });
+
+  test('signing in with an authorization code exchanges it and stores the refresh token', () async {
+    fakeRelay.nextRefreshToken = 'refresh_abc';
+    fakeSignIn.toReturn = SignInResult.success('user_111', 'auth_code_xyz');
+    await ctrl.signIn();
+    expect(fakeRelay.lastExchangedCode, 'auth_code_xyz');
+    expect(fakeTokenStore.value, 'refresh_abc');
+  });
+
+  test('deleteAccount revokes the stored refresh token, deletes the iCloud copy, and resets progress', () async {
+    fakeRelay.nextRefreshToken = 'refresh_abc';
+    fakeSignIn.toReturn = SignInResult.success('user_222', 'auth_code_xyz');
+    await ctrl.signIn();
+    final ctrl2 = container.read(profileControllerProvider.notifier);
+    ctrl2.addCoins(50);
+    expect(fakeCloud.store.containsKey('vialo_profile_user_222'), isTrue);
+
+    final result = await ctrl.deleteAccount();
+
+    expect(result.tokenRevoked, isTrue);
+    expect(fakeRelay.lastRevokedToken, 'refresh_abc');
+    expect(fakeTokenStore.value, isNull);
+    expect(fakeCloud.store.containsKey('vialo_profile_user_222'), isFalse);
+    final p = container.read(profileControllerProvider).value!;
+    expect(p.appleUserId, isNull);
+    expect(p.coins, 100);
+  });
+
+  test('deleteAccount with no linked account still resets local progress without error', () async {
+    container.read(profileControllerProvider.notifier).addCoins(50);
+    final result = await ctrl.deleteAccount();
+    expect(result.tokenRevoked, isFalse);
+    final p = container.read(profileControllerProvider).value!;
     expect(p.coins, 100);
   });
 }

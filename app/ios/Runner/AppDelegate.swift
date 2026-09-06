@@ -48,6 +48,10 @@ import UIKit
         store.set(value, forKey: key)
         store.synchronize()
         result(nil)
+      case "remove":
+        store.removeObject(forKey: key)
+        store.synchronize()
+        result(nil)
       default:
         result(FlutterMethodNotImplemented)
       }

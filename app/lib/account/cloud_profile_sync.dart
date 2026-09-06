@@ -36,4 +36,17 @@ class CloudProfileSync {
       return false;
     }
   }
+
+  /// Removes the profile blob at [key] from iCloud key-value storage —
+  /// used only by account deletion (guideline 5.1.1(v) requires actually
+  /// deleting the user's iCloud data, not just unlinking locally).
+  Future<bool> deleteProfile(String key) async {
+    try {
+      await _channel.invokeMethod<void>('remove', {'key': key});
+      return true;
+    } catch (e) {
+      debugPrint('CloudProfileSync.deleteProfile unavailable: $e');
+      return false;
+    }
+  }
 }

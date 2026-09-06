@@ -1,14 +1,19 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../profile/player_profile.dart';
 import '../state/profile_provider.dart';
+import 'apple_refresh_token_store.dart';
 import 'apple_sign_in_service.dart';
+import 'apple_token_relay_service.dart';
 import 'cloud_profile_sync.dart';
 
 final appleSignInServiceProvider = Provider<AppleSignInService>((ref) => AppleSignInService());
 final cloudProfileSyncProvider = Provider<CloudProfileSync>((ref) => CloudProfileSync());
+final appleTokenRelayServiceProvider = Provider<AppleTokenRelayService>((ref) => AppleTokenRelayService());
+final appleRefreshTokenStoreProvider = Provider<AppleRefreshTokenStore>((ref) => AppleRefreshTokenStore());
 
 /// Result of [AccountController.signIn] once the Apple credential itself
 /// succeeded: either progress was pushed straight to iCloud (first link, or
@@ -42,8 +47,10 @@ class AccountController {
   final AppleSignInService _signIn;
   final CloudProfileSync _cloud;
   final ProfileController _profile;
+  final AppleTokenRelayService _relay;
+  final AppleRefreshTokenStore _tokenStore;
 
-  AccountController(this._signIn, this._cloud, this._profile);
+  AccountController(this._signIn, this._cloud, this._profile, this._relay, this._tokenStore);
 
   Future<bool> get isAppleSignInAvailable => _signIn.isAvailable;
 
@@ -68,6 +75,21 @@ class AccountController {
     }
     final appleUserId = result.userId!;
     _profile.linkAppleAccount(appleUserId);
+
+    // Exchange the authorization code for a refresh token now, while it's
+    // still valid, so deleteAccount() has something to revoke later. This
+    // relay call is best-effort: sign-in must succeed even if it fails (no
+    // network, or the relay isn't deployed yet — see
+    // apple_token_relay_config.dart).
+    final code = result.authorizationCode;
+    if (code != null && code.isNotEmpty) {
+      final refreshToken = await _relay.exchangeCodeForRefreshToken(code);
+      if (refreshToken != null) {
+        await _tokenStore.save(refreshToken);
+      } else {
+        debugPrint('AccountController.signIn: could not obtain a refresh token to revoke on deletion later');
+      }
+    }
 
     final remoteJson = await _cloud.getProfile(_cloudKey(appleUserId));
     if (remoteJson != null) {
@@ -112,6 +134,42 @@ class AccountController {
   }
 
   void signOut() => _profile.unlinkAppleAccount();
+
+  /// Deletes the player's account end to end (guideline 5.1.1(v)):
+  /// revokes the Sign in with Apple credential, deletes the iCloud copy of
+  /// their progress, then wipes local progress back to a fresh, signed-out
+  /// profile. Each step is best-effort and independent — a player must be
+  /// able to delete their local data even if, say, they're offline and the
+  /// revoke call can't reach Apple, so this never throws and always leaves
+  /// the profile signed out and reset. [tokenRevoked] reports whether the
+  /// Apple credential itself was confirmed revoked, for the caller to
+  /// surface if it wants to.
+  Future<DeleteAccountResult> deleteAccount() async {
+    final p = _profile.currentProfile;
+    final appleUserId = p.appleUserId;
+
+    var tokenRevoked = false;
+    final refreshToken = await _tokenStore.read();
+    if (refreshToken != null) {
+      tokenRevoked = await _relay.revokeRefreshToken(refreshToken);
+      if (!tokenRevoked) {
+        debugPrint('AccountController.deleteAccount: could not confirm Apple token revocation');
+      }
+    }
+    await _tokenStore.clear();
+
+    if (appleUserId != null) {
+      await _cloud.deleteProfile(_cloudKey(appleUserId));
+    }
+
+    _profile.resetProfile();
+    return DeleteAccountResult(tokenRevoked: tokenRevoked);
+  }
+}
+
+class DeleteAccountResult {
+  final bool tokenRevoked;
+  const DeleteAccountResult({required this.tokenRevoked});
 }
 
 final accountControllerProvider = Provider<AccountController>((ref) {
@@ -119,5 +177,7 @@ final accountControllerProvider = Provider<AccountController>((ref) {
     ref.watch(appleSignInServiceProvider),
     ref.watch(cloudProfileSyncProvider),
     ref.watch(profileControllerProvider.notifier),
+    ref.watch(appleTokenRelayServiceProvider),
+    ref.watch(appleRefreshTokenStoreProvider),
   );
 });

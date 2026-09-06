@@ -152,8 +152,47 @@ class _AppleAccountCard extends ConsumerWidget {
               );
             },
           ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Delete account', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.hot)),
+            subtitle: const Text(
+              'Erases your progress from iCloud and this device',
+              style: TextStyle(color: AppColors.mute, fontSize: 12),
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.hot),
+            onTap: () => _handleDeleteAccount(context, ctrl),
+          ),
         ],
       ),
+    );
+  }
+
+  Future<void> _handleDeleteAccount(BuildContext context, AccountController ctrl) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete account?'),
+        content: const Text(
+          "This permanently deletes your saved progress, coins, and stars from iCloud and this device, and removes "
+          "this app's access to your Apple ID. This can't be undone.\n\n"
+          'Any Pro purchase or subscription stays tied to your Apple ID and can be restored later — this only '
+          "deletes this game's data.",
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete account', style: TextStyle(color: AppColors.hot, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await ctrl.deleteAccount();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Account deleted')),
     );
   }
 

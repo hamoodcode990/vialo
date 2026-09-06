@@ -170,6 +170,16 @@ class ProfileController extends AsyncNotifier<PlayerProfile> {
     _commit(p.clone());
   }
 
+  /// Wipes all local progress and returns to a fresh, signed-out profile —
+  /// used only by account deletion (CLAUDE.md's App Store guideline
+  /// 5.1.1(v) fix), after the caller has already revoked the Apple
+  /// credential and deleted the iCloud copy. Unlike [replaceProfile], this
+  /// never restores anything — it's the "delete" half of that pair.
+  void resetProfile() {
+    final now = _now();
+    _commit(PlayerProfile(livesUpdatedAt: now, firstOpenAt: now));
+  }
+
   /// Wholesale-replaces the profile — used only for the explicit "Restore
   /// from iCloud" choice (CLAUDE.md Step 7), never as a side effect of any
   /// other action, since it discards whatever local progress preceded it.
