@@ -75,8 +75,10 @@ class PurchaseService {
       if (code == PurchasesErrorCode.purchaseCancelledError) {
         return PurchaseResult.cancelled();
       }
+      debugPrint('PurchaseService.purchase failed: ${code.name} — $e');
       return PurchaseResult.failed(e.message ?? code.name);
     } catch (e) {
+      debugPrint('PurchaseService.purchase failed: $e');
       return PurchaseResult.failed('$e');
     }
   }

@@ -54,13 +54,20 @@ const List<IapProduct> kLivesProducts = [
     subtitle: '',
     fallbackPriceLabel: '\$1.99',
   ),
-  IapProduct(
-    id: kProductUnlimited7d,
-    title: 'Unlimited lives — 7 days',
-    subtitle: '',
-    fallbackPriceLabel: '\$6.99',
-  ),
 ];
+
+// Not offered in v1: Apple requires a subscription group to contain at least
+// one auto-renewable subscription, and this is meant to stay a
+// non-renewing one-time pass. Left defined (and still handled by
+// reward_mapping.dart's applyProductPurchase) so re-adding it later — once
+// there's an auto-renewable sibling in its group, or it's reworked as a
+// consumable — is just adding this back to kLivesProducts.
+const IapProduct kUnlimited7dProduct = IapProduct(
+  id: kProductUnlimited7d,
+  title: 'Unlimited lives — 7 days',
+  subtitle: '',
+  fallbackPriceLabel: '\$6.99',
+);
 
 const List<IapProduct> kCoinProducts = [
   IapProduct(id: kProductCoins500, title: '500 coins', subtitle: '', fallbackPriceLabel: '\$1.99'),
