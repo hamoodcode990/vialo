@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:purchases_flutter/purchases_flutter.dart';
 
-import 'iap_products.dart';
 import 'monetization_config.dart';
 
 enum PurchaseOutcome { success, cancelled, failed, unavailable }
@@ -83,9 +82,8 @@ class PurchaseService {
     }
   }
 
-  /// Restores prior non-consumable purchases (only [kProductRemoveAds] in
-  /// this catalog — consumables have no StoreKit purchase history to
-  /// restore, by design).
+  /// Restores prior non-consumable purchases. The v1 catalog is all
+  /// consumables, which have no StoreKit purchase history to restore.
   Future<PurchaseResult> restore() async {
     if (!_configured) return PurchaseResult.unavailable();
     try {

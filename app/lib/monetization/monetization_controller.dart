@@ -58,12 +58,9 @@ class MonetizationController {
     }
   }
 
-  /// Reconciles [kProductRemoveAds] (the only non-consumable in the
-  /// catalog — consumables have no StoreKit purchase history to restore).
-  /// This is the Apple-submission-checklist "buy → delete → reinstall →
-  /// restore" flow; that specific end-to-end path needs a real device and
-  /// sandbox Apple ID, which don't exist in this repo — this method is the
-  /// real, testable-once-configured implementation of it.
+  /// Every product in the v1 catalog is a consumable, which StoreKit keeps
+  /// no restorable history for — so this only syncs with RevenueCat and
+  /// reports that there's nothing to bring back.
   Future<String> restore() async {
     if (!purchases.isAvailable) {
       return 'Store not configured yet — nothing to restore.';
@@ -72,9 +69,7 @@ class MonetizationController {
     if (!result.isSuccess) {
       return 'Restore failed: ${result.errorMessage}';
     }
-    final active = result.customerInfo!.entitlements.active.keys.toSet();
-    profile.applyMutation((p) => applyRestoredEntitlements(p, active));
-    return active.contains(kEntitlementNoAds) ? 'Restored: ads removed.' : 'No previous purchases found to restore.';
+    return 'No previous purchases found to restore.';
   }
 
   /// Shows a rewarded video for [placement] (+1 life or +25 coins). Falls

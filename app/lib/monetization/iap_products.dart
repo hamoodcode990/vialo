@@ -5,23 +5,12 @@
 /// purchase, no subscriptions, matching CLAUDE.md's monetization stance.
 library;
 
-const String kProductRefillLives = 'vialo_refill_lives';
-const String kProductUnlimited2h = 'vialo_unlimited_lives_2h';
-// Apple wouldn't release com.sablastudio.vialo.lives.unlimited7d after a
-// deleted draft used it — App Store Connect's real, permanent id for this
-// product is com.sablastudio.vialo.pass.7d instead.
-const String kProductUnlimited7d = 'com.sablastudio.vialo.pass.7d';
-const String kProductCoins500 = 'vialo_coins_500';
-const String kProductCoins1200 = 'vialo_coins_1200';
-const String kProductCoins3000 = 'vialo_coins_3000';
-const String kProductRemoveAds = 'vialo_remove_ads';
-const String kProductStarterPack = 'vialo_starter_pack';
-
-/// The RevenueCat entitlement identifier backing [kProductRemoveAds] — the
-/// only product in this catalog that's non-consumable and thus the only one
-/// meaningful to reconcile via Restore Purchases (consumables have no
-/// purchase history for StoreKit to restore).
-const String kEntitlementNoAds = 'no_ads';
+const String kProductRefillLives = 'com.sablastudio.vialo.lives.refill';
+const String kProductUnlimited2h = 'com.sablastudio.vialo.lives.unlimited2h';
+const String kProductCoins500 = 'com.sablastudio.vialo.coins.500';
+const String kProductCoins1200 = 'com.sablastudio.vialo.coins.1200';
+const String kProductCoins3000 = 'com.sablastudio.vialo.coins.3000';
+const String kProductStarterPack = 'com.sablastudio.vialo.starterpack';
 
 class IapProduct {
   final String id;
@@ -56,31 +45,11 @@ const List<IapProduct> kLivesProducts = [
   ),
 ];
 
-// Not offered in v1: Apple requires a subscription group to contain at least
-// one auto-renewable subscription, and this is meant to stay a
-// non-renewing one-time pass. Left defined (and still handled by
-// reward_mapping.dart's applyProductPurchase) so re-adding it later — once
-// there's an auto-renewable sibling in its group, or it's reworked as a
-// consumable — is just adding this back to kLivesProducts.
-const IapProduct kUnlimited7dProduct = IapProduct(
-  id: kProductUnlimited7d,
-  title: 'Unlimited lives — 7 days',
-  subtitle: '',
-  fallbackPriceLabel: '\$6.99',
-);
-
 const List<IapProduct> kCoinProducts = [
   IapProduct(id: kProductCoins500, title: '500 coins', subtitle: '', fallbackPriceLabel: '\$1.99'),
   IapProduct(id: kProductCoins1200, title: '1200 coins', subtitle: '', fallbackPriceLabel: '\$3.99'),
   IapProduct(id: kProductCoins3000, title: '3000 coins', subtitle: '', fallbackPriceLabel: '\$7.99'),
 ];
-
-const IapProduct kRemoveAdsProduct = IapProduct(
-  id: kProductRemoveAds,
-  title: 'Remove ads',
-  subtitle: 'No interstitials, ever',
-  fallbackPriceLabel: '\$2.99',
-);
 
 const IapProduct kStarterPackProduct = IapProduct(
   id: kProductStarterPack,
@@ -92,7 +61,6 @@ const IapProduct kStarterPackProduct = IapProduct(
 const List<IapProduct> kAllProducts = [
   ...kLivesProducts,
   ...kCoinProducts,
-  kRemoveAdsProduct,
   kStarterPackProduct,
 ];
 

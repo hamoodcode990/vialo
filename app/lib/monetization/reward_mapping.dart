@@ -16,16 +16,12 @@ void applyProductPurchase(PlayerProfile p, String productId, int nowMs) {
       p.addLives(PlayerProfile.lifeMax);
     case kProductUnlimited2h:
       _grantUnlimitedLives(p, nowMs, const Duration(hours: 2));
-    case kProductUnlimited7d:
-      _grantUnlimitedLives(p, nowMs, const Duration(days: 7));
     case kProductCoins500:
       p.addCoins(500);
     case kProductCoins1200:
       p.addCoins(1200);
     case kProductCoins3000:
       p.addCoins(3000);
-    case kProductRemoveAds:
-      p.adsRemoved = true;
     case kProductStarterPack:
       _grantUnlimitedLives(p, nowMs, const Duration(hours: 24));
       p.addCoins(1000);
@@ -36,16 +32,6 @@ void applyProductPurchase(PlayerProfile p, String productId, int nowMs) {
       }
     default:
       throw ArgumentError.value(productId, 'productId', 'unknown IAP product');
-  }
-}
-
-/// Applies the [kEntitlementNoAds] entitlement found during a Restore
-/// Purchases call. Consumables (lives/coins/starter pack) have no purchase
-/// history for StoreKit to restore, so this is the only thing restore
-/// meaningfully reconciles.
-void applyRestoredEntitlements(PlayerProfile p, Set<String> activeEntitlements) {
-  if (activeEntitlements.contains(kEntitlementNoAds)) {
-    p.adsRemoved = true;
   }
 }
 

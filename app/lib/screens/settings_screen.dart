@@ -57,7 +57,7 @@ class SettingsScreen extends ConsumerWidget {
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Restore purchases', style: TextStyle(fontWeight: FontWeight.w700)),
                 subtitle: Text(
-                  monetize.isStoreAvailable ? 'Reapplies any past purchase (e.g. Remove Ads)' : 'Store not configured yet',
+                  monetize.isStoreAvailable ? 'Reapplies any past purchase' : 'Store not configured yet',
                   style: const TextStyle(color: AppColors.mute, fontSize: 12),
                 ),
                 trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.mute),

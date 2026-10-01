@@ -74,14 +74,6 @@ class StoreScreen extends ConsumerWidget {
                 onTap: () => buy(product.id),
               ),
             _WatchAdRow(subtitle: '+25 coins, free', accent: AppColors.coin, onWatched: () => watch(kAdPlacementCoins)),
-            const _SectionLabel('ADS'),
-            _IapRow(
-              title: kRemoveAdsProduct.title,
-              subtitle: profile.adsRemoved ? 'Already removed' : kRemoveAdsProduct.subtitle,
-              price: profile.adsRemoved ? null : kRemoveAdsProduct.fallbackPriceLabel,
-              accent: AppColors.violet,
-              onTap: profile.adsRemoved ? null : () => buy(kProductRemoveAds),
-            ),
             const _SectionLabel('PALETTE'),
             for (final p in kTubePalettes)
               _PaletteRow(
