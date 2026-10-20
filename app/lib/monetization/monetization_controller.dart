@@ -58,20 +58,6 @@ class MonetizationController {
     }
   }
 
-  /// Every product in the v1 catalog is a consumable, which StoreKit keeps
-  /// no restorable history for — so this only syncs with RevenueCat and
-  /// reports that there's nothing to bring back.
-  Future<String> restore() async {
-    if (!purchases.isAvailable) {
-      return 'Store not configured yet — nothing to restore.';
-    }
-    final result = await purchases.restore();
-    if (!result.isSuccess) {
-      return 'Restore failed: ${result.errorMessage}';
-    }
-    return 'No previous purchases found to restore.';
-  }
-
   /// Shows a rewarded video for [placement] (+1 life or +25 coins). Falls
   /// back to a simulated-load stub only when there's no ad SDK at all
   /// (web/desktop dev environment) — if the SDK is available but a real ad

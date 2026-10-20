@@ -81,16 +81,4 @@ class PurchaseService {
       return PurchaseResult.failed('$e');
     }
   }
-
-  /// Restores prior non-consumable purchases. The v1 catalog is all
-  /// consumables, which have no StoreKit purchase history to restore.
-  Future<PurchaseResult> restore() async {
-    if (!_configured) return PurchaseResult.unavailable();
-    try {
-      final info = await Purchases.restorePurchases();
-      return PurchaseResult.success(info);
-    } catch (e) {
-      return PurchaseResult.failed('$e');
-    }
-  }
 }

@@ -3,12 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../account/account_controller.dart';
 import '../audio/audio_controller.dart';
-import '../monetization/monetization_controller.dart';
 import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 
-/// Sound and restore-purchases. Port of decant.html's mute toggle
+/// Sound and iCloud progress sync. Port of decant.html's mute toggle
 /// (consolidated here as its own screen per flutter_port_plan.md's Phase 4
 /// screen list). Sound effects and music are independent toggles (CLAUDE.md
 /// Step 9) rather than the single combined switch the HTML prototype had.
@@ -20,7 +19,6 @@ class SettingsScreen extends ConsumerWidget {
     final profile = ref.watch(profileProvider);
     final ctrl = ref.read(profileControllerProvider.notifier);
     final audio = ref.read(audioControllerProvider);
-    final monetize = ref.watch(monetizationControllerProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -49,23 +47,6 @@ class SettingsScreen extends ConsumerWidget {
                     },
                   ),
                 ],
-              ),
-            ),
-            const _Label('ACCOUNT'),
-            _Card(
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Restore purchases', style: TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: Text(
-                  monetize.isStoreAvailable ? 'Reapplies any past purchase' : 'Store not configured yet',
-                  style: const TextStyle(color: AppColors.mute, fontSize: 12),
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.mute),
-                onTap: () async {
-                  final message = await monetize.restore();
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-                },
               ),
             ),
             const _Label('SYNC PROGRESS'),
