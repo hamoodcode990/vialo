@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:isolate';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
@@ -33,6 +34,39 @@ import 'wave_synth.dart';
 ///    during exactly the moments (staggered pour animations) most likely
 ///    to read as stutter. Caching one file per tone and reusing it turns
 ///    every play after the first into pure playback, no I/O.
+// Lazily-rendered, calm-vs-lighter looping pads. Top-level, because rendering
+// one takes long enough to drop frames, so it runs on its own isolate.
+//
+// Each track is a real four-chord progression (voice-led — adjacent
+// chords share common tones) rather than one static chord held for the
+// whole loop, which is what made the old pad sound like a flat drone on
+// repeat. See wave_synth.dart's renderAmbientPad for the synthesis side
+// (chorus detune, tremolo, echo) — this is just the composition.
+
+// Am7 - Fmaj7 - Cmaj7 - Gsus4→G: a warm i-VI-III-VII loop, for menu screens.
+Uint8List _menuTrackBytes() => renderAmbientPad(
+      chords: const [
+        [220.00, 261.63, 329.63, 392.00], // Am7:  A3 C4 E4 G4
+        [174.61, 220.00, 261.63, 329.63], // Fmaj7: F3 A3 C4 E4
+        [261.63, 329.63, 392.00, 493.88], // Cmaj7: C4 E4 G4 B4
+        [196.00, 261.63, 293.66, 392.00], // Gsus4: G3 C4 D4 G4
+      ],
+      duration: 28,
+      volume: 0.045,
+    );
+
+// Dmaj7 - Bm7 - G - Asus4→A: a brighter I-vi-IV-V loop, for gameplay.
+Uint8List _gameTrackBytes() => renderAmbientPad(
+      chords: const [
+        [293.66, 369.99, 440.00, 554.37], // Dmaj7: D4 F#4 A4 C#5
+        [246.94, 293.66, 369.99, 440.00], // Bm7:   B3 D4 F#4 A4
+        [196.00, 246.94, 293.66, 392.00], // G:     G3 B3 D4 G4
+        [220.00, 293.66, 329.63, 440.00], // Asus4: A3 D4 E4 A4
+      ],
+      duration: 24,
+      volume: 0.05,
+    );
+
 class AudioController {
   final SfxLibrary _sfx = SfxLibrary();
   final List<AudioPlayer> _sfxPool = List.generate(4, (_) => AudioPlayer()..setPlayerMode(PlayerMode.lowLatency));
@@ -46,38 +80,6 @@ class AudioController {
 
   AudioController(this._profile);
 
-  // ---- lazily-rendered, calm-vs-lighter looping pads --------------------
-  //
-  // Each track is a real four-chord progression (voice-led — adjacent
-  // chords share common tones) rather than one static chord held for the
-  // whole loop, which is what made the old pad sound like a flat drone on
-  // repeat. See wave_synth.dart's renderAmbientPad for the synthesis side
-  // (chorus detune, tremolo, echo) — this is just the composition.
-
-  // Am7 - Fmaj7 - Cmaj7 - Gsus4→G: a warm i-VI-III-VII loop, for menu screens.
-  Uint8List _menuTrackBytes() => renderAmbientPad(
-        chords: const [
-          [220.00, 261.63, 329.63, 392.00], // Am7:  A3 C4 E4 G4
-          [174.61, 220.00, 261.63, 329.63], // Fmaj7: F3 A3 C4 E4
-          [261.63, 329.63, 392.00, 493.88], // Cmaj7: C4 E4 G4 B4
-          [196.00, 261.63, 293.66, 392.00], // Gsus4: G3 C4 D4 G4
-        ],
-        duration: 28,
-        volume: 0.045,
-      );
-
-  // Dmaj7 - Bm7 - G - Asus4→A: a brighter I-vi-IV-V loop, for gameplay.
-  Uint8List _gameTrackBytes() => renderAmbientPad(
-        chords: const [
-          [293.66, 369.99, 440.00, 554.37], // Dmaj7: D4 F#4 A4 C#5
-          [246.94, 293.66, 369.99, 440.00], // Bm7:   B3 D4 F#4 A4
-          [196.00, 246.94, 293.66, 392.00], // G:     G3 B3 D4 G4
-          [220.00, 293.66, 329.63, 440.00], // Asus4: A3 D4 E4 A4
-        ],
-        duration: 24,
-        volume: 0.05,
-      );
-
   Future<void> _ensureContext() async {
     if (_contextReady) return;
     _contextReady = true;
@@ -90,14 +92,14 @@ class AudioController {
 
   /// Writes [render]'s bytes to a stable `.wav` file the first time [key] is
   /// requested, then reuses that same file path on every later call.
-  Future<String> _fileFor(String key, Uint8List Function() render) async {
+  Future<String> _fileFor(String key, FutureOr<Uint8List> Function() render) async {
     final cached = _filePaths[key];
     if (cached != null) return cached;
     final dir = await getTemporaryDirectory();
     final path = '${dir.path}/vialo_audio_$key.wav';
     final file = File(path);
     if (!await file.exists()) {
-      await file.writeAsBytes(render(), flush: true);
+      await file.writeAsBytes(await render(), flush: true);
     }
     _filePaths[key] = path;
     return path;
@@ -158,7 +160,8 @@ class AudioController {
       // getTemporaryDirectory() picks up the new composition instead of
       // silently keeping the stale file forever — _fileFor only (re)renders
       // when the path doesn't already exist.
-      final path = await _fileFor('music_${track}_v2', track == 'menu' ? _menuTrackBytes : _gameTrackBytes);
+      final path = await _fileFor('music_${track}_v2', () => Isolate.run(track == 'menu' ? _menuTrackBytes : _gameTrackBytes));
+      if (_currentTrack != track) return; // left the screen while it rendered
       await _music.play(DeviceFileSource(path, mimeType: 'audio/wav'), volume: 0.35);
     } catch (e) {
       debugPrint('AudioController: music playback unavailable: $e');

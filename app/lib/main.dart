@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import 'monetization/monetization_controller.dart';
 import 'screens/home_screen.dart';
@@ -8,8 +9,20 @@ import 'screens/intro_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'state/profile_provider.dart';
 import 'theme/app_theme.dart';
+import 'theme/cosmetics.dart' show kAvatars;
 import 'widgets/animated_app_background.dart';
+import 'widgets/app_icon.dart';
 import 'widgets/app_toast.dart';
+
+/// Loads every icon and avatar into flutter_svg's cache up front, so the first
+/// screens don't decode them while they animate in.
+Future<void> _precacheSvgs() async {
+  final assets = [for (final i in AppIcons.values) i.asset, for (final a in kAvatars) a.asset];
+  for (final asset in assets) {
+    final loader = SvgAssetLoader(asset);
+    await svg.cache.putIfAbsent(loader.cacheKey(null), () => loader.loadBytes(null));
+  }
+}
 
 void main() {
   runApp(const ProviderScope(child: VialoApp()));
@@ -32,6 +45,7 @@ class _VialoAppState extends ConsumerState<VialoApp> {
     // see MonetizationController.initialize().
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(monetizationControllerProvider).initialize();
+      _precacheSvgs();
     });
     // Android defaults to 60Hz even on 90/120Hz-capable screens unless an
     // app opts in — iOS ProMotion is already covered by
