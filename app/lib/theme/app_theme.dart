@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
@@ -21,8 +22,8 @@ ThemeData buildAppTheme() {
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
-    // Transparent so every Scaffold shows the shared AnimatedAppBackground
-    // mounted at the MaterialApp root instead of a flat colour.
+    // Transparent so every Scaffold shows the AnimatedAppBackground its route
+    // paints (see AppRoute). A route must paint one, or it would be see-through.
     scaffoldBackgroundColor: Colors.transparent,
     canvasColor: AppColors.ink,
     // Fredoka: rounded, heavy-weight display font for the candy-puzzle look
@@ -91,6 +92,12 @@ ThemeData buildAppTheme() {
       ),
       titleTextStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.txt),
       contentTextStyle: const TextStyle(fontSize: 13.5, color: AppColors.mute, height: 1.4),
+    ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+      },
     ),
     splashFactory: NoSplash.splashFactory,
     highlightColor: Colors.transparent,

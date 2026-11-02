@@ -6,6 +6,7 @@ import '../audio/audio_controller.dart';
 import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
+import '../widgets/app_route.dart';
 import '../widgets/app_toast.dart';
 
 /// Sound and iCloud progress sync. Port of decant.html's mute toggle
@@ -148,7 +149,7 @@ class _AppleAccountCard extends ConsumerWidget {
   }
 
   Future<void> _handleDeleteAccount(BuildContext context, AccountController ctrl) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete account?'),
@@ -181,7 +182,7 @@ class _AppleAccountCard extends ConsumerWidget {
       case LinkSynced():
         AppToast.show('Signed in — progress synced to iCloud');
       case LinkNeedsRestoreChoice(remote: final remote):
-        final restore = await showDialog<bool>(
+        final restore = await showAppDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
             title: const Text('Restore progress?'),

@@ -2,17 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
-/// Full-screen backdrop behind every screen — mounted once at the
-/// MaterialApp root via `builder:` so every Scaffold (which is transparent,
-/// see buildAppTheme) shows it through. Dark/futuristic theme (CLAUDE.md,
-/// updated 2026-08-30): a deep near-black navy-to-plum gradient, matching
-/// the app icon's own dark tube-pour art instead of clashing with it.
+/// The full-screen backdrop every route paints for itself (AppRoute,
+/// GameRoute): a deep near-black navy-to-plum gradient. Scaffolds are
+/// transparent, so this is what makes each screen opaque.
 ///
-/// Fully static — no ticker, no Timer, nothing scheduling a repaint here.
-/// This was previously an animated drift (first a 60fps AnimationController,
-/// then a throttled Timer) but reported lag persisted even after
-/// throttling, so rather than keep tuning an update rate that can't be
-/// measured in this environment, the animation was removed entirely.
+/// Fully static: no ticker, no Timer, nothing scheduling a repaint here.
 class AnimatedAppBackground extends StatelessWidget {
   final Widget child;
   const AnimatedAppBackground({super.key, required this.child});
@@ -33,6 +27,6 @@ class AnimatedAppBackground extends StatelessWidget {
   }
 }
 
-/// Fallback flat colour for contexts that render before the backdrop mounts
-/// (e.g. the native launch screen).
+/// Flat colour under the Navigator, for anything that renders before a
+/// route's backdrop mounts.
 const kBackgroundFallback = AppColors.ink;

@@ -474,7 +474,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
         actions = [
           primaryAction('Next level', () {
             Navigator.of(context).pushReplacement(
-              AppRoute(
+              GameRoute(
                 builder: (_) =>
                     SoloGameScreen(levelNumber: widget.levelNumber! + 1),
               ),

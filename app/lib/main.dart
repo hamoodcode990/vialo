@@ -47,11 +47,10 @@ class _VialoAppState extends ConsumerState<VialoApp> {
       title: 'Vialo',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
-      // Mounted once here rather than per-screen so every Scaffold (which is
-      // transparent, see buildAppTheme) shows the same drifting backdrop.
+      // Only a flat floor: each route paints its own backdrop, see AppRoute.
       navigatorObservers: [AppToastObserver()],
-      builder: (context, child) => AppToastHost(child: AnimatedAppBackground(child: child!)),
-      home: const _AppGate(),
+      builder: (context, child) => AppToastHost(child: ColoredBox(color: kBackgroundFallback, child: child!)),
+      home: const AnimatedAppBackground(child: _AppGate()),
     );
   }
 }

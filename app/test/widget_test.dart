@@ -130,7 +130,7 @@ void main() {
 
     await tester.tap(find.byType(AvatarGlyph).first); // header avatar -> Profile
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 600));
 
     expect(find.text('AVATAR'), findsOneWidget);
     // 8 avatars total in the picker grid — Profile itself has no header

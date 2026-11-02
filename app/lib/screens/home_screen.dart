@@ -111,7 +111,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
               ),
               const SizedBox(height: AppSpacing.xl),
               AppCard(
-                onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const DailyChallengeScreen())),
+                onTap: () => Navigator.of(context).push(GameRoute(builder: (_) => const DailyChallengeScreen())),
                 child: Row(
                   children: [
                     Expanded(

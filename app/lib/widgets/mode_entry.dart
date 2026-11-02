@@ -28,5 +28,5 @@ Future<void> openMode(
     if (playedNext != true) return;
   }
   if (!context.mounted) return;
-  Navigator.of(context).push(AppRoute(builder: gameBuilder));
+  Navigator.of(context).push(GameRoute(builder: gameBuilder));
 }

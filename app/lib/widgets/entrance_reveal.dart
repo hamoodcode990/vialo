@@ -44,9 +44,36 @@ class _EntranceRevealState extends State<EntranceReveal>
     duration: widget.duration,
   );
 
+  Animation<double>? _routeAnimation;
+  bool _started = false;
+
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started || _routeAnimation != null) return;
+    // Waits for the route's own transition, so the board deals in after the
+    // screen has arrived rather than during its fade.
+    // On a pushed route's first frame the route is offstage and this animation
+    // reports "completed" while the real one hasn't started yet, so that
+    // frame doesn't count.
+    final route = ModalRoute.of(context);
+    final routeAnimation = route?.animation;
+    if (routeAnimation == null || (routeAnimation.isCompleted && !route!.offstage)) {
+      _start();
+    } else {
+      _routeAnimation = routeAnimation..addStatusListener(_onRouteStatus);
+    }
+  }
+
+  void _onRouteStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    _routeAnimation?.removeStatusListener(_onRouteStatus);
+    _routeAnimation = null;
+    _start();
+  }
+
+  void _start() {
+    _started = true;
     if (widget.delay == Duration.zero) {
       _ctrl.forward();
     } else {
@@ -58,6 +85,7 @@ class _EntranceRevealState extends State<EntranceReveal>
 
   @override
   void dispose() {
+    _routeAnimation?.removeStatusListener(_onRouteStatus);
     _ctrl.dispose();
     super.dispose();
   }
