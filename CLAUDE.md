@@ -6,23 +6,21 @@ no CDN, no external assets. Open it in Chrome to test.
 Shared-board strategy game themed as Madame Corvel's atelier — the player is an
 apprentice perfumer.
 
-**Visual identity (updated, supersedes earlier "no dark mode" decision):**
-dark, futuristic, simple. The original theme was warm ivory/parchment with a
-serif wordmark and an explicit "no dark mode, no neon, no glow" rule, settled
-after several rounds of iteration — that rule is now explicitly overridden by
-the user (2026-08-30): the app is moving to a dark, tech-forward look (deep
-near-black/navy chrome, saturated neon-adjacent accents, glow effects
-permitted) while staying simple/uncluttered, not busy or gaudy. This applies
-to the Flutter app (`app/`), which is the actual shipping target. decant.html
-hasn't been re-themed to match as of this note — it's still the original warm
-light theme — since it's the reference implementation, not the shipping
-vehicle (see Shipping below); re-theme it too if it's ever used for anything
-user-facing again.
+**Visual identity:** dark neon. Deep near-black/navy chrome, saturated
+neon-adjacent accents, glow permitted, kept simple and uncluttered rather than
+busy or gaudy. This applies to the Flutter app (`app/`), which is the actual
+shipping target. decant.html is the reference implementation, not the shipping
+vehicle (see Shipping below), and is still the original warm light theme;
+re-theme it too if it's ever used for anything user-facing again.
+
+UI icons are the custom set in `app/assets/icons/` (`AppIcon`), never emoji.
 
 The tube colour palettes (`app/lib/theme/tube_palettes.dart` /
-decant.html's `PAL`) are unaffected by this — those are deuteranopia-audited
-gameplay cosmetics, not app chrome, and stay as measured regardless of what
-the surrounding UI looks like.
+decant.html's `PAL`) are deuteranopia-audited gameplay cosmetics, not app chrome,
+and stay as measured regardless of what the surrounding UI looks like. Boards
+with more than 9 colours and Split's gold are handled at render time in
+`app/lib/theme/board_colors.dart`, measured by
+`app/test/theme/board_colors_test.dart`.
 
 ## Do not change these without being asked
 
@@ -51,8 +49,11 @@ of simulated games to find. In the source they look arbitrary. They are not.
 
 ## Monetization
 
-- Pro is **$4.99**, one-time, no subscription.
-- Gate **content only**: levels 1–80 free, 81–200 Pro.
+- Consumable lives and coins only, sold as one-time In-App Purchases. No
+  subscriptions, no Pro, and no Restore Purchases (nothing to restore in an
+  all-consumable catalog; guideline 3.1.1).
+- Ads are rewarded video only, always opted into by the player.
+- Nothing that grants a life can be bought or watched while lives are full.
 - Never gate difficulty or any duel mode. All three difficulties and all four modes
   stay free. Gating competitive access costs more in reviews than it earns.
 - Never sell gameplay advantage.
