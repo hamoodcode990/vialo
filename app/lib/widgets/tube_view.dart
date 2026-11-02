@@ -93,7 +93,7 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
     } else if (widget.isTarget) {
       borderColor = AppColors.p1;
     } else {
-      borderColor = AppColors.outline;
+      borderColor = kTubeEdgeColor;
     }
 
     Widget glass = CustomPaint(
@@ -116,14 +116,9 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
           bottomLeft: Radius.circular(widget.width * 0.4),
           bottomRight: Radius.circular(widget.width * 0.4),
         ),
+        // No BoxShadow: a shadow paints under the whole box, so it would show
+        // through the clear glass and turn it grey.
         border: Border.all(color: borderColor, width: borderWidth),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.txt.withValues(alpha: 0.16),
-            blurRadius: 20,
-            offset: const Offset(0, 14),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.only(
@@ -143,8 +138,8 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedOpacity(
-          opacity: widget.dimmed ? 0.34 : 1.0,
-          duration: const Duration(milliseconds: 180),
+          opacity: widget.dimmed ? 0.75 : 1.0,
+          duration: const Duration(milliseconds: 120),
           child: AnimatedBuilder(
             animation: _shakeCtrl,
             builder: (context, child) {

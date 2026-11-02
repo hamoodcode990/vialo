@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/board_colors.dart';
 
 /// A contiguous run of one colour, bottom-up. Fractional while a pour is
@@ -63,15 +62,17 @@ Color shade(Color c, int delta) {
   );
 }
 
-// A shared "essence" undertone every liquid blends toward near the bottom of
-// its vial. tube_palettes.dart's audited hex values are untouched; only how a
-// resolved colour gets painted changes here.
-const _essenceUndertone = Color(0xFF1A0E2E);
+/// The darker outer edge that separates a tube from the background. Selected,
+/// legal-target and sealed tubes replace it with their own colour.
+const Color kTubeEdgeColor = Color(0xFF2B3252);
 
-List<Color> _essenceGradient(Color base) => [
-      Color.lerp(base, Colors.white, 0.18)!,
+/// Each colour band: a touch lighter at the top, a touch darker at the bottom.
+/// tube_palettes.dart's audited hex values are untouched; only how a resolved
+/// colour gets painted changes here.
+List<Color> _bandGradient(Color base) => [
+      Color.lerp(base, Colors.white, 0.10)!,
       base,
-      Color.lerp(base, _essenceUndertone, 0.42)!,
+      Color.lerp(base, Colors.black, 0.20)!,
     ];
 
 RRect tubeRRect(Size size) => RRect.fromRectAndCorners(
@@ -89,8 +90,8 @@ Paint bandPaint(Color color, Rect rect) {
     ..shader = LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: metallic ? kMetallicGoldStops : _essenceGradient(color),
-      stops: metallic ? const [0.0, 0.3, 0.7, 1.0] : const [0.0, 0.4, 1.0],
+      colors: metallic ? kMetallicGoldStops : _bandGradient(color),
+      stops: metallic ? const [0.0, 0.3, 0.7, 1.0] : const [0.0, 0.45, 1.0],
     ).createShader(rect);
 }
 
@@ -122,28 +123,39 @@ Paint meniscusPaint(Color color) => Paint()
   ..strokeWidth = 2
   ..style = PaintingStyle.stroke;
 
+/// Clear glass: the background shows through, with the faintest white tint.
 void paintGlassBack(Canvas canvas, Size size) {
   canvas.drawRRect(
     tubeRRect(size),
     Paint()
       ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Colors.white.withValues(alpha: 0.55), AppColors.txt.withValues(alpha: 0.05)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Colors.white.withValues(alpha: 0.08), Colors.white.withValues(alpha: 0.05)],
       ).createShader(Offset.zero & size),
   );
 }
 
+/// Everything in front of the liquid: inner shadow at the bottom curve, the
+/// left streak, a faint right-edge highlight and the bright rim.
 void paintGlassFront(Canvas canvas, Size size) {
   final w = size.width, h = size.height;
   final rrect = tubeRRect(size);
-  canvas.drawRRect(
-    rrect.deflate(0.75),
+
+  canvas.save();
+  canvas.clipRRect(rrect);
+  final shadow = Rect.fromLTWH(0, h - w * 0.55, w, w * 0.55);
+  canvas.drawRect(
+    shadow,
     Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..color = Colors.white.withValues(alpha: 0.65),
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Colors.black.withValues(alpha: 0), Colors.black.withValues(alpha: 0.22)],
+      ).createShader(shadow),
   );
+  canvas.restore();
+
   final streak = Rect.fromLTWH(w * 0.13, h * 0.04, w * 0.1, h * 0.84);
   canvas.drawRRect(
     RRect.fromRectAndRadius(streak, Radius.circular(w * 0.05)),
@@ -151,8 +163,27 @@ void paintGlassFront(Canvas canvas, Size size) {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [Colors.white.withValues(alpha: 0.85), Colors.white.withValues(alpha: 0)],
+        colors: [Colors.white.withValues(alpha: 0.62), Colors.white.withValues(alpha: 0)],
       ).createShader(streak),
+  );
+
+  final rightEdge = Rect.fromLTWH(w * 0.86, h * 0.06, w * 0.045, h * 0.74);
+  canvas.drawRRect(
+    RRect.fromRectAndRadius(rightEdge, Radius.circular(w * 0.03)),
+    Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Colors.white.withValues(alpha: 0.20), Colors.white.withValues(alpha: 0)],
+      ).createShader(rightEdge),
+  );
+
+  canvas.drawRRect(
+    rrect.deflate(0.5),
+    Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = Colors.white.withValues(alpha: 0.35),
   );
 }
 

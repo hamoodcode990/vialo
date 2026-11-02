@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import 'tube_geometry.dart';
 import 'tube_painter.dart';
 
@@ -412,7 +411,7 @@ class _StagePainter extends CustomPainter {
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = kTubeBorder
-          ..color = AppColors.outline,
+          ..color = kTubeEdgeColor,
       );
     });
   }
