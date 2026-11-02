@@ -148,7 +148,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                           const Text('Solo sort', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
                           const SizedBox(height: 2),
                           Text(
-                            '${kLevelCounts['solo']} levels · your own path through the atelier',
+                            '$kSoloLevelCount levels · your own path through the atelier',
                             style: const TextStyle(fontSize: 11.5, color: AppColors.mute),
                           ),
                         ],

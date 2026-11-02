@@ -9,6 +9,7 @@ import 'screens/onboarding_screen.dart';
 import 'state/profile_provider.dart';
 import 'theme/app_theme.dart';
 import 'widgets/animated_app_background.dart';
+import 'widgets/app_toast.dart';
 
 void main() {
   runApp(const ProviderScope(child: VialoApp()));
@@ -48,7 +49,8 @@ class _VialoAppState extends ConsumerState<VialoApp> {
       theme: buildAppTheme(),
       // Mounted once here rather than per-screen so every Scaffold (which is
       // transparent, see buildAppTheme) shows the same drifting backdrop.
-      builder: (context, child) => AnimatedAppBackground(child: child!),
+      navigatorObservers: [AppToastObserver()],
+      builder: (context, child) => AppToastHost(child: AnimatedAppBackground(child: child!)),
       home: const _AppGate(),
     );
   }

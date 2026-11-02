@@ -6,8 +6,12 @@ library;
 
 import 'constants.dart';
 
+/// Solo's total level count: the one number Home, the level map and Profile
+/// all show.
+const int kSoloLevelCount = 350;
+
 const Map<String, int> kLevelCounts = {
-  'solo': 350,
+  'solo': kSoloLevelCount,
   'pour': 150,
   'split': 150,
   'fuse': 100,

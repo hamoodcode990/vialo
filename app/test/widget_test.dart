@@ -98,7 +98,8 @@ void main() {
     await tester.tap(find.byIcon(Icons.lock_rounded).first);
     await tester.pump();
 
-    expect(find.text('Locked — clear the level before it first'), findsWidgets);
+    expect(find.text('Locked — clear Level 1 first'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
   });
 
   testWidgets("a duel mode's Levels screen tells its own chaptered story, not a flat grid", (WidgetTester tester) async {

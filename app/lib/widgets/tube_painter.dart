@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/board_colors.dart';
 
 /// A contiguous run of one colour, bottom-up — mirrors how decant.html's
 /// `tubesHTML`/`drawSolo` merge same-colour runs into one visual liquid
@@ -104,8 +105,8 @@ class TubePainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: _essenceGradient(seg.color),
-          stops: const [0.0, 0.4, 1.0],
+          colors: seg.color == kMetallicGold ? kMetallicGoldStops : _essenceGradient(seg.color),
+          stops: seg.color == kMetallicGold ? const [0.0, 0.3, 0.7, 1.0] : const [0.0, 0.4, 1.0],
         ).createShader(rect);
       if (sealed) paint.color = paint.color.withValues(alpha: 0.62);
 
@@ -119,6 +120,27 @@ class TubePainter extends CustomPainter {
         canvas.drawPath(path, paint);
       } else {
         canvas.drawRect(rect, paint);
+      }
+      if (seg.color == kMetallicGold) {
+        // A fixed diagonal glint rather than a moving shimmer: an animated
+        // one would keep the screen repainting while nothing is happening.
+        canvas.save();
+        canvas.clipRect(rect);
+        canvas.drawRect(
+          rect,
+          Paint()
+            ..shader = LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0),
+                Colors.white.withValues(alpha: 0.38),
+                Colors.white.withValues(alpha: 0),
+              ],
+              stops: const [0.28, 0.42, 0.56],
+            ).createShader(rect),
+        );
+        canvas.restore();
       }
       bottomY = top;
     }

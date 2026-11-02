@@ -6,6 +6,7 @@ import '../audio/audio_controller.dart';
 import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
+import '../widgets/app_toast.dart';
 
 /// Sound and iCloud progress sync. Port of decant.html's mute toggle
 /// (consolidated here as its own screen per flutter_port_plan.md's Phase 4
@@ -128,9 +129,7 @@ class _AppleAccountCard extends ConsumerWidget {
             onTap: () async {
               final ok = await ctrl.pushToCloud();
               if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(ok ? 'Progress synced to iCloud' : "Couldn't reach iCloud")),
-              );
+              AppToast.show(ok ? 'Progress synced to iCloud' : "Couldn't reach iCloud");
             },
           ),
           ListTile(
@@ -172,9 +171,7 @@ class _AppleAccountCard extends ConsumerWidget {
 
     await ctrl.deleteAccount();
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Account deleted')),
-    );
+    AppToast.show('Account deleted');
   }
 
   Future<void> _handleSignIn(BuildContext context, AccountController ctrl) async {
@@ -182,9 +179,7 @@ class _AppleAccountCard extends ConsumerWidget {
     if (!context.mounted) return;
     switch (outcome) {
       case LinkSynced():
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Signed in — progress synced to iCloud')),
-        );
+        AppToast.show('Signed in — progress synced to iCloud');
       case LinkNeedsRestoreChoice(remote: final remote):
         final restore = await showDialog<bool>(
           context: context,
@@ -202,14 +197,14 @@ class _AppleAccountCard extends ConsumerWidget {
         if (restore == true) {
           ctrl.restoreFromCloud(remote);
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Progress restored from iCloud')));
+            AppToast.show('Progress restored from iCloud');
           }
         } else {
           await ctrl.pushToCloud();
         }
       case LinkFailed(message: final message):
         if (message.isNotEmpty && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+          AppToast.show(message);
         }
     }
   }

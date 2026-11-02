@@ -10,6 +10,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/board_colors.dart';
 import '../theme/spacing.dart';
 
 /// Cycles through [frames] on a fixed interval, crossfading between them.
@@ -105,7 +106,17 @@ class TubeVisual extends StatelessWidget {
               width: double.infinity,
               height: 14,
               margin: const EdgeInsets.only(top: 2),
-              decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(4)),
+              decoration: BoxDecoration(
+                color: c == kMetallicGold ? null : c,
+                gradient: c == kMetallicGold
+                    ? const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: kMetallicGoldStops,
+                      )
+                    : null,
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
         ],
       ),

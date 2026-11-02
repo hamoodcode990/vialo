@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../game/level_curves.dart' show kSoloLevelCount;
 import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/cosmetics.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_route.dart';
+import '../widgets/app_toast.dart';
 import 'settings_screen.dart';
 import 'stats_screen.dart';
 
@@ -70,9 +72,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       if ((profile.levelProgress['solo'] ?? 1) >= a.unlockLevel) {
                         ctrl.setAvatar(a.id);
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Unlocks at Solo level ${a.unlockLevel}')),
-                        );
+                        AppToast.show('Unlocks at Solo level ${a.unlockLevel}', icon: Icons.lock_rounded);
                       }
                     },
                   ),
@@ -83,7 +83,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               children: [
                 Expanded(child: _StatTile(value: '⭐ $totalStars', label: 'total stars', color: AppColors.gold)),
                 const SizedBox(width: AppSpacing.sm),
-                Expanded(child: _StatTile(value: '${(profile.levelProgress['solo'] ?? 1) - 1}/300', label: 'solo cleared', color: AppColors.p1)),
+                Expanded(child: _StatTile(value: '${(profile.levelProgress['solo'] ?? 1) - 1}/$kSoloLevelCount', label: 'solo cleared', color: AppColors.p1)),
               ],
             ),
             const SizedBox(height: AppSpacing.lg),

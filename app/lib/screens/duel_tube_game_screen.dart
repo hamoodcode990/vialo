@@ -10,6 +10,7 @@ import '../audio/audio_controller.dart';
 import '../game/game.dart';
 import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/board_colors.dart';
 import '../theme/mode_info.dart';
 import '../theme/spacing.dart';
 import '../theme/tube_palettes.dart';
@@ -24,6 +25,12 @@ import '../widgets/tube_view.dart';
 /// the level ladder as the game's actual gated progression currency. Kept
 /// small rather than zero so a win still pays off something.
 const Map<String, int> kBotBonus = {'easy': 3, 'normal': 5, 'hard': 8};
+
+/// The label for a player's tubes: two people passing one phone are P1/P2,
+/// never YOU/THEM.
+String playerLabel(int player, {required bool vsBot}) => vsBot
+    ? (player == 0 ? 'YOU' : 'BOT')
+    : (player == 0 ? 'P1' : 'P2');
 
 /// Pour, Split and Recipe all share this board (a row of tubes) and this
 /// interaction model (tap to lift, tap again to pour) — port of
@@ -210,7 +217,7 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
     _flightKey.currentState!.playPour(
       from: srcRect,
       to: dstRect,
-      color: palette[col],
+      color: _colorOf(palette, col),
       count: n,
       onDone: () {
         if (!mounted) return;
@@ -291,6 +298,11 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
     setState(() {});
   }
 
+  Color _colorOf(TubePalette palette, int idx) {
+    final e = engine;
+    return e is Split ? splitColour(palette, idx, e.own) : boardColour(palette, idx);
+  }
+
   double _tubeWidth(double avail, int n) {
     final per = n <= 7 ? n : (n / 2).ceil();
     final a = avail.clamp(0, 540) - 22 - (per - 1) * 7;
@@ -300,7 +312,9 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
   String? _capLabel(int i) {
     if (widget.kind == 'recipe') {
       if (i >= kRecipeSrc) {
-        return i - kRecipeSrc == 0 ? 'YOUR VIAL' : 'THEIR VIAL';
+        final who = i - kRecipeSrc;
+        if (widget.mode == 'ai') return who == 0 ? 'YOUR VIAL' : 'BOT VIAL';
+        return '${playerLabel(who, vsBot: false)} VIAL';
       }
       return '';
     }
@@ -308,7 +322,7 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
     final t = engine.tubes[i];
     if (t.isEmpty) return '';
     final o = (engine as Split).colOwner(t.last);
-    return o == 0 ? 'YOU' : (o == 1 ? 'THEM' : 'GOLD');
+    return o == -1 ? 'GOLD' : playerLabel(o, vsBot: widget.mode == 'ai');
   }
 
   Color? _capColor(int i) {
@@ -329,7 +343,7 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
     final palette = tubePaletteById(profile.paletteId);
-    Color colorOf(int idx) => palette[idx];
+    Color colorOf(int idx) => _colorOf(palette, idx);
     final info = modeInfoFor(widget.kind);
     final names = _names;
 
@@ -366,6 +380,7 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
                 ),
                 child: _RecipeTargets(
                   recipe: engine as Recipe,
+                  vsBot: widget.mode == 'ai',
                   colorOf: colorOf,
                 ),
               ),
@@ -515,7 +530,9 @@ class _RecipeTargets extends StatelessWidget {
   final Recipe recipe;
   final Color Function(int) colorOf;
 
-  const _RecipeTargets({required this.recipe, required this.colorOf});
+  final bool vsBot;
+
+  const _RecipeTargets({required this.recipe, required this.colorOf, required this.vsBot});
 
   @override
   Widget build(BuildContext context) {
@@ -523,7 +540,7 @@ class _RecipeTargets extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _FormulaRow(
-          label: 'YOUR FORMULA',
+          label: vsBot ? 'YOUR FORMULA' : 'P1 FORMULA',
           labelColor: AppColors.p1,
           recipe: recipe.recipes[0],
           filled: recipe.scores[0],
@@ -532,7 +549,7 @@ class _RecipeTargets extends StatelessWidget {
         ),
         const SizedBox(height: 5),
         _FormulaRow(
-          label: 'THEIR PROGRESS',
+          label: vsBot ? 'BOT PROGRESS' : 'P2 PROGRESS',
           labelColor: AppColors.p2,
           recipe: recipe.recipes[1],
           filled: recipe.scores[1],

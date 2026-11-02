@@ -8,6 +8,7 @@ import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/tube_palettes.dart';
+import '../widgets/app_toast.dart';
 import '../widgets/header_bar.dart' show formatLifeCountdown;
 
 /// IAP + rewarded-ad + cosmetics store. Real purchases/ads route through
@@ -29,13 +30,10 @@ class StoreScreen extends ConsumerWidget {
     final starterEligible = !profile.starterUsed &&
         DateTime.now().millisecondsSinceEpoch - profile.firstOpenAt < 48 * 3600 * 1000;
 
-    void toast(String msg) {
-      if (msg.isEmpty) return; // e.g. a cancelled purchase — nothing to say
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-    }
+    final livesFull = profile.lives >= PlayerProfile.lifeMax;
 
-    Future<void> buy(String productId) async => toast(await monetize.purchase(productId));
-    Future<void> watch(String placement) async => toast(await monetize.watchRewardedAd(placement));
+    Future<void> buy(String productId) async => AppToast.show(await monetize.purchase(productId));
+    Future<void> watch(String placement) async => AppToast.show(await monetize.watchRewardedAd(placement));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Store')),
@@ -61,9 +59,15 @@ class StoreScreen extends ConsumerWidget {
                 subtitle: null,
                 price: product.fallbackPriceLabel,
                 accent: AppColors.life,
+                disabledLabel: product.id == kProductRefillLives && livesFull ? 'Full' : null,
                 onTap: () => buy(product.id),
               ),
-            _WatchAdRow(subtitle: '+1 life, free', accent: AppColors.life, onWatched: () => watch(kAdPlacementLife)),
+            _WatchAdRow(
+              subtitle: '+1 life, free',
+              accent: AppColors.life,
+              disabledLabel: livesFull ? 'Lives full' : null,
+              onWatched: () => watch(kAdPlacementLife),
+            ),
             const _SectionLabel('COINS'),
             for (final product in kCoinProducts)
               _IapRow(
@@ -84,7 +88,7 @@ class StoreScreen extends ConsumerWidget {
                 selected: profile.paletteId == p.id,
                 onTap: () {
                   final ok = ctrl.selectPalette(p.id, p.price);
-                  if (!ok) toast('Not enough coins');
+                  if (!ok) AppToast.show('Not enough coins');
                 },
               ),
             const Padding(
@@ -101,14 +105,8 @@ class StoreScreen extends ConsumerWidget {
               subtitle: null,
               price: '75🪙',
               accent: AppColors.gold,
-              onTap: () {
-                if (ctrl.spendCoins(75)) {
-                  ctrl.addLives(1);
-                  toast('+1 life');
-                } else {
-                  toast('Not enough coins');
-                }
-              },
+              disabledLabel: livesFull ? 'Full' : null,
+              onTap: () => AppToast.show(monetize.buyLifeWithCoins(75)),
             ),
           ],
         ),
@@ -201,7 +199,10 @@ class _IapRow extends StatelessWidget {
   final String? price;
   final Color accent;
   final VoidCallback? onTap;
-  const _IapRow({required this.title, required this.subtitle, required this.price, this.accent = AppColors.p1, required this.onTap});
+
+  /// When set, the button shows this instead of the price and does nothing.
+  final String? disabledLabel;
+  const _IapRow({required this.title, required this.subtitle, required this.price, this.accent = AppColors.p1, this.disabledLabel, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -229,16 +230,8 @@ class _IapRow extends StatelessWidget {
           ),
           if (price != null)
             GestureDetector(
-              onTap: onTap,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: [accent, Color.lerp(accent, Colors.black, 0.28)!]),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.outline, width: 2.5),
-                ),
-                child: Text(price!, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13)),
-              ),
+              onTap: disabledLabel != null ? null : onTap,
+              child: _StoreButton(label: disabledLabel ?? price!, accent: accent, enabled: disabledLabel == null),
             )
           else
             Icon(Icons.check_circle_rounded, color: accent),
@@ -248,11 +241,37 @@ class _IapRow extends StatelessWidget {
   }
 }
 
+/// The pill on the right of a Store row.
+class _StoreButton extends StatelessWidget {
+  final String label;
+  final Color accent;
+  final bool enabled;
+  const _StoreButton({required this.label, required this.accent, this.enabled = true});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
+      decoration: BoxDecoration(
+        color: enabled ? null : AppColors.ink,
+        gradient: enabled ? LinearGradient(colors: [accent, Color.lerp(accent, Colors.black, 0.28)!]) : null,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.outline, width: 2.5),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: enabled ? Colors.white : AppColors.mute, fontWeight: FontWeight.w800, fontSize: 13),
+      ),
+    );
+  }
+}
+
 class _WatchAdRow extends StatefulWidget {
   final String subtitle;
   final Color accent;
+  final String? disabledLabel;
   final Future<void> Function() onWatched;
-  const _WatchAdRow({required this.subtitle, this.accent = AppColors.violet, required this.onWatched});
+  const _WatchAdRow({required this.subtitle, this.accent = AppColors.violet, this.disabledLabel, required this.onWatched});
 
   @override
   State<_WatchAdRow> createState() => _WatchAdRowState();
@@ -284,7 +303,7 @@ class _WatchAdRowState extends State<_WatchAdRow> {
             ),
           ),
           GestureDetector(
-            onTap: _loading
+            onTap: _loading || widget.disabledLabel != null
                 ? null
                 : () async {
                     setState(() => _loading = true);
@@ -294,17 +313,10 @@ class _WatchAdRowState extends State<_WatchAdRow> {
                     if (!mounted) return;
                     setState(() => _loading = false);
                   },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [widget.accent, Color.lerp(widget.accent, Colors.black, 0.28)!]),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.outline, width: 2.5),
-              ),
-              child: Text(
-                _loading ? 'Loading…' : '▶ Watch',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
-              ),
+            child: _StoreButton(
+              label: widget.disabledLabel ?? (_loading ? 'Loading…' : '▶ Watch'),
+              accent: widget.accent,
+              enabled: widget.disabledLabel == null,
             ),
           ),
         ],

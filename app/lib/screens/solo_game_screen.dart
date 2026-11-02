@@ -8,9 +8,11 @@ import '../audio/audio_controller.dart';
 import '../game/game.dart';
 import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/board_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/tube_palettes.dart';
 import '../widgets/app_route.dart';
+import '../widgets/app_toast.dart';
 import '../widgets/game_result_panel.dart';
 import '../widgets/pour_flight_overlay.dart';
 import '../widgets/tube_view.dart';
@@ -172,7 +174,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
     _flightKey.currentState!.playPour(
       from: srcRect,
       to: dstRect,
-      color: palette[col],
+      color: boardColour(palette, col),
       count: n,
       onDone: () {
         if (!mounted) return;
@@ -291,9 +293,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
   }
 
   void _toast(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
-    );
+    AppToast.show(msg);
   }
 
   double _tubeWidth(double avail, int n) {
@@ -306,7 +306,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
     final palette = tubePaletteById(profile.paletteId);
-    Color colorOf(int idx) => palette[idx];
+    Color colorOf(int idx) => boardColour(palette, idx);
     final secs = _startedAt == null
         ? 0
         : DateTime.now().difference(_startedAt!).inSeconds;

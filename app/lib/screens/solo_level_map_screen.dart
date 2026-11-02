@@ -8,6 +8,7 @@ import '../theme/chapters.dart';
 import '../theme/cosmetics.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_route.dart';
+import '../widgets/app_toast.dart';
 import '../widgets/header_bar.dart';
 import '../widgets/level_road_path.dart';
 import '../widgets/mode_entry.dart';
@@ -43,7 +44,7 @@ class _SoloLevelMapScreenState extends ConsumerState<SoloLevelMapScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
-    final total = kLevelCounts['solo']!;
+    final total = kSoloLevelCount;
     final progress = profile.levelProgress['solo'] ?? 1;
     final avatar = avatarById(profile.avatarId);
     final chapters = buildChapters('solo', total);
@@ -122,16 +123,14 @@ class _SoloLevelMapScreenState extends ConsumerState<SoloLevelMapScreen> {
 
   void _openLevel(BuildContext context, LevelNodeData node) {
     if (node.state == LevelNodeState.locked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Locked — clear the level before it first')),
-      );
+      AppToast.show('Locked — clear Level ${node.level - 1} first', icon: Icons.lock_rounded);
       return;
     }
     final profile = ref.read(profileProvider);
     final unlimited = profile.tempLivesUntil > DateTime.now().millisecondsSinceEpoch;
     if (profile.lives <= 0 && !unlimited) {
       Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen()));
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Out of lives')));
+      AppToast.show('Out of lives');
       return;
     }
     openMode(

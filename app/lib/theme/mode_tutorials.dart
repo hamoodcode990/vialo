@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../widgets/tutorial_visuals.dart';
 import 'app_colors.dart';
+import 'board_colors.dart';
 import 'mode_info.dart';
 
 /// Per-mode "how to play" content shown by `ModeTutorialScreen` — one door
@@ -192,12 +193,12 @@ final _splitSteps = [
     body: "Whoever pours the last drop into a gold tube claims it. It's the only colour up for grabs, so it swings the tightest games.",
     visual: (_) => TutorialLoopDemo(frames: [
       Row(mainAxisSize: MainAxisSize.min, children: const [
-        TubeVisual(blocks: [AppColors.gold, AppColors.gold]),
+        TubeVisual(blocks: [kMetallicGold, kMetallicGold]),
         SizedBox(width: 8),
         Text('shared', style: TextStyle(color: AppColors.mute, fontSize: 11, fontWeight: FontWeight.w700)),
       ]),
       Row(mainAxisSize: MainAxisSize.min, children: const [
-        TubeVisual(blocks: [AppColors.gold, AppColors.gold, AppColors.gold], sealed: true),
+        TubeVisual(blocks: [kMetallicGold, kMetallicGold, kMetallicGold], sealed: true),
         SizedBox(width: 8),
         Text('claimed!', style: TextStyle(color: AppColors.gold, fontSize: 11, fontWeight: FontWeight.w800)),
       ]),
@@ -215,7 +216,7 @@ Widget _splitOwnersVisual(BuildContext context) => const Row(
       children: [
         TubeVisual(blocks: [AppColors.p2, AppColors.p2]),
         SizedBox(width: 8),
-        TubeVisual(blocks: [AppColors.gold, AppColors.gold]),
+        TubeVisual(blocks: [kMetallicGold, kMetallicGold]),
         SizedBox(width: 8),
         TubeVisual(blocks: [AppColors.p1, AppColors.p1]),
       ],
