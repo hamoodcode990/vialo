@@ -7,6 +7,7 @@ import '../theme/app_colors.dart';
 import '../theme/cosmetics.dart';
 import '../theme/mode_info.dart';
 import '../theme/spacing.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_route.dart';
 import '../widgets/header_bar.dart';
@@ -60,21 +61,21 @@ class ModeHubScreen extends ConsumerWidget {
                 child: Text(info.blurb, style: const TextStyle(color: AppColors.mute, fontSize: 12.5, height: 1.4)),
               ),
               HubCard(
-                emoji: '🗺️',
+                icon: AppIcons.map,
                 accentColor: info.color,
                 title: 'Levels',
                 subtitle: '$cleared/$total cleared · costs lives to fail, coins to win',
                 onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => LevelSelectScreen(mode: modeId))),
               ),
               HubCard(
-                emoji: '⚡',
+                icon: AppIcons.bolt,
                 accentColor: info.color,
                 title: 'Quick match',
                 subtitle: 'Pick a difficulty, play now — free, unlimited',
                 onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => QuickMatchSetupScreen(modeId: modeId))),
               ),
               HubCard(
-                emoji: '🤝',
+                icon: AppIcons.passPlay,
                 accentColor: info.color,
                 title: 'Pass & play',
                 subtitle: 'Local two-player, same device — free, unlimited',

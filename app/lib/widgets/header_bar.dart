@@ -4,6 +4,7 @@ import '../profile/player_profile.dart';
 import '../theme/app_colors.dart';
 import '../theme/cosmetics.dart';
 import '../theme/spacing.dart';
+import 'app_icon.dart';
 
 /// Avatar · lives (with a refill countdown) · coins — shown on every
 /// non-gameplay screen. Port of decant.html's `headerBar()`.
@@ -48,7 +49,7 @@ class HeaderBar extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('❤️', style: TextStyle(fontSize: 13)),
+                const AppIcon(AppIcons.heart, size: 15),
                 const SizedBox(width: 4),
                 Text(
                   unlimited ? '∞' : '${profile.lives}',
@@ -56,7 +57,7 @@ class HeaderBar extends StatelessWidget {
                 ),
                 if (!unlimited && nextMs > 0) ...[
                   const SizedBox(width: 5),
-                  Text('⏳', style: TextStyle(fontSize: 9, color: AppColors.mute.withValues(alpha: 0.8))),
+                  const AppIcon(AppIcons.hourglass, size: 11),
                   const SizedBox(width: 2),
                   Text(
                     formatLifeCountdown(nextMs),
@@ -73,7 +74,7 @@ class HeaderBar extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('🪙', style: TextStyle(fontSize: 13)),
+                const AppIcon(AppIcons.coin, size: 15),
                 const SizedBox(width: 4),
                 Text('${profile.coins}', style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.goldd)),
               ],

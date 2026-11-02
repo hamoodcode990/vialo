@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/app_icon.dart';
 import '../widgets/tutorial_visuals.dart';
 import 'app_colors.dart';
 import 'board_colors.dart';
@@ -23,19 +24,19 @@ class TutorialStep {
 class TutorialModeMeta {
   final String name;
   final Color color;
-  final String emoji;
-  const TutorialModeMeta({required this.name, required this.color, required this.emoji});
+  final AppIcons icon;
+  const TutorialModeMeta({required this.name, required this.color, required this.icon});
 }
 
 TutorialModeMeta tutorialMetaFor(String modeId) {
   if (modeId == 'solo') {
-    // A map/path glyph, not a flask — Pour already owns 🧪, and Solo's own
+    // A map/path glyph, not a flask: Pour already owns that, and Solo's own
     // identity everywhere else in the app (SoloLevelMapScreen, its Home
     // card) is the winding road, not a tube.
-    return const TutorialModeMeta(name: 'Solo sort', color: AppColors.p1, emoji: '🗺️');
+    return const TutorialModeMeta(name: 'Solo sort', color: AppColors.p1, icon: AppIcons.map);
   }
   final m = modeInfoFor(modeId);
-  return TutorialModeMeta(name: m.name, color: m.color, emoji: m.emoji);
+  return TutorialModeMeta(name: m.name, color: m.color, icon: m.icon);
 }
 
 List<TutorialStep> tutorialStepsFor(String modeId) {

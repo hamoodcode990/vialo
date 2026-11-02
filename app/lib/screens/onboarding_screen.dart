@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/app_button.dart';
 
 /// First-launch-only skippable overlay (CLAUDE.md Step 6): static slides,
@@ -18,30 +19,30 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 }
 
 class _Slide {
-  final String emoji;
+  final List<AppIcons> icons;
   final String title;
   final String body;
-  const _Slide(this.emoji, this.title, this.body);
+  const _Slide(this.icons, this.title, this.body);
 }
 
 const _slides = [
   _Slide(
-    '🧪',
+    [AppIcons.pour],
     'One shared board',
     'Duel modes: two players race to claim the same board. Solo: sort it yourself against the clock.',
   ),
   _Slide(
-    '🔒',
+    [AppIcons.lock],
     'Claim it to score it',
     'Complete a tube or tile and it locks in — sealed, scored, and yours for the rest of the game.',
   ),
   _Slide(
-    '❤️🪙',
+    [AppIcons.heart, AppIcons.coin],
     'Lives and coins',
     'Lives limit level attempts and refill over time. Coins buy hints, undos, and cosmetics — earned by winning.',
   ),
   _Slide(
-    '✨',
+    [AppIcons.sparkle],
     "You're ready",
     "That's the whole game. Pick a mode and start claiming.",
   ),
@@ -142,7 +143,10 @@ class _SlideView extends StatelessWidget {
               border: Border.all(color: AppColors.outline, width: 3),
               boxShadow: [BoxShadow(color: AppColors.txt.withValues(alpha: 0.1), blurRadius: 16, offset: const Offset(0, 6))],
             ),
-            child: Text(slide.emoji, style: const TextStyle(fontSize: 40)),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [for (final icon in slide.icons) AppIcon(icon, size: slide.icons.length > 1 ? 34 : 46)],
+            ),
           ),
           const SizedBox(height: AppSpacing.xl),
           Text(

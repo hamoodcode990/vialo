@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/mode_tutorials.dart';
 import '../theme/spacing.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/app_button.dart';
 
 /// A mode's how-to-play walkthrough — a short, visual PageView of
@@ -58,7 +59,7 @@ class _ModeTutorialScreenState extends State<ModeTutorialScreen> {
             children: [
               Row(
                 children: [
-                  Text(_meta.emoji, style: const TextStyle(fontSize: 20)),
+                  AppIcon(_meta.icon, size: 24),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

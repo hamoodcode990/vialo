@@ -8,6 +8,7 @@ import '../theme/app_colors.dart';
 import '../theme/cosmetics.dart';
 import '../theme/mode_info.dart';
 import '../theme/spacing.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_route.dart';
 import '../widgets/header_bar.dart';
@@ -127,7 +128,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                         ],
                       ),
                     ),
-                    Text('🔥 ${profile.daily.streak}', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.goldd)),
+                    const AppIcon(AppIcons.flame, size: 16),
+                    const SizedBox(width: 4),
+                    Text('${profile.daily.streak}', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.goldd)),
                   ],
                 ),
               ),
@@ -139,7 +142,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                 ),
                 child: Row(
                   children: [
-                    const Text('🗺️', style: TextStyle(fontSize: 26)),
+                    const AppIcon(AppIcons.map, size: 30),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -176,10 +179,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _IconButton(emoji: '🛍️', onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen()))),
-                  _IconButton(emoji: '📊', onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StatsScreen()))),
+                  _IconButton(icon: AppIcons.store, onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StoreScreen()))),
+                  _IconButton(icon: AppIcons.stats, onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const StatsScreen()))),
                   _IconButton(
-                    emoji: '⚙️',
+                    icon: AppIcons.settings,
                     onTap: () => Navigator.of(context).push(AppRoute(builder: (_) => const SettingsScreen())),
                   ),
                 ],
@@ -213,7 +216,7 @@ class _ModeGridTile extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(mode.emoji, style: const TextStyle(fontSize: 22)),
+          AppIcon(mode.icon, size: 26),
           const SizedBox(height: 6),
           Text(mode.name, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
         ],
@@ -223,9 +226,9 @@ class _ModeGridTile extends ConsumerWidget {
 }
 
 class _IconButton extends StatelessWidget {
-  final String emoji;
+  final AppIcons icon;
   final VoidCallback onTap;
-  const _IconButton({required this.emoji, required this.onTap});
+  const _IconButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -243,7 +246,7 @@ class _IconButton extends StatelessWidget {
             border: Border.all(color: AppColors.outline, width: 2.5),
             boxShadow: [BoxShadow(color: AppColors.txt.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 3))],
           ),
-          child: Text(emoji, style: const TextStyle(fontSize: 17)),
+          child: AppIcon(icon, size: 22),
         ),
       ),
     );

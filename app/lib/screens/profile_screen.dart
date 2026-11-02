@@ -6,6 +6,7 @@ import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/cosmetics.dart';
 import '../theme/spacing.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/app_route.dart';
 import '../widgets/app_toast.dart';
 import 'settings_screen.dart';
@@ -81,7 +82,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const _Label('PROGRESS'),
             Row(
               children: [
-                Expanded(child: _StatTile(value: '⭐ $totalStars', label: 'total stars', color: AppColors.gold)),
+                Expanded(child: _StatTile(icon: AppIcons.star, value: '$totalStars', label: 'total stars', color: AppColors.gold)),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(child: _StatTile(value: '${(profile.levelProgress['solo'] ?? 1) - 1}/$kSoloLevelCount', label: 'solo cleared', color: AppColors.p1)),
               ],
@@ -96,10 +97,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 }
 
-/// One avatar-picker tile. Locked avatars stay visible (never hidden —
-/// "seeing what's coming is part of the motivation") but greyed out with a
-/// lock badge showing the required level; tapping one shows the same
-/// "Unlocks at Level X" info via [onTap] rather than doing nothing.
+/// One avatar-picker tile. Locked avatars show the actual mascot, dimmed and
+/// desaturated, with a small lock badge giving the required level; tapping one
+/// says when it unlocks via [onTap].
 class _AvatarTile extends StatelessWidget {
   final AvatarOption avatar;
   final bool selected;
@@ -121,31 +121,56 @@ class _AvatarTile extends StatelessWidget {
           ),
         ),
         alignment: Alignment.center,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Opacity(
-              opacity: unlocked ? 1 : 0.3,
-              child: AvatarGlyph(avatar: avatar, size: 44, ring: false),
-            ),
-            if (!unlocked)
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.lock_rounded, color: AppColors.txt, size: 18),
-                  const SizedBox(height: 1),
-                  Text(
-                    'Lvl ${avatar.unlockLevel}',
-                    style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: AppColors.txt),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final art = AvatarGlyph(avatar: avatar, size: constraints.biggest.shortestSide * 0.8, ring: false);
+            if (unlocked) return Center(child: art);
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                ColorFiltered(
+                  colorFilter: const ColorFilter.matrix(_kDesaturate),
+                  child: Opacity(opacity: 0.55, child: art),
+                ),
+                Positioned(
+                  right: 3,
+                  bottom: 3,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.ink,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(color: AppColors.outline, width: 1.5),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.lock_rounded, color: AppColors.txt, size: 10),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${avatar.unlockLevel}',
+                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.txt),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-          ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 }
+
+/// Mostly greyscale, keeping a hint of the mascot's colour.
+const List<double> _kDesaturate = [
+  0.40, 0.48, 0.12, 0, 0,
+  0.25, 0.63, 0.12, 0, 0,
+  0.25, 0.48, 0.27, 0, 0,
+  0, 0, 0, 1, 0,
+];
 
 class _Label extends StatelessWidget {
   final String text;
@@ -161,7 +186,8 @@ class _StatTile extends StatelessWidget {
   final String value;
   final String label;
   final Color color;
-  const _StatTile({required this.value, required this.label, this.color = AppColors.txt});
+  final AppIcons? icon;
+  const _StatTile({required this.value, required this.label, this.color = AppColors.txt, this.icon});
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -174,7 +200,12 @@ class _StatTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: color)),
+          Row(
+            children: [
+              if (icon != null) ...[AppIcon(icon!, size: 22), const SizedBox(width: 6)],
+              Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: color)),
+            ],
+          ),
           Text(label, style: const TextStyle(fontSize: 11, color: AppColors.mute)),
         ],
       ),

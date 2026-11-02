@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/app_icon.dart';
 import 'app_colors.dart';
 
 /// Static per-mode display metadata — name, accent colour, blurb. Port of
@@ -9,14 +10,14 @@ class ModeInfo {
   final String name;
   final Color color;
   final String blurb;
-  final String emoji;
+  final AppIcons icon;
 
   const ModeInfo({
     required this.id,
     required this.name,
     required this.color,
     required this.blurb,
-    required this.emoji,
+    required this.icon,
   });
 }
 
@@ -26,28 +27,28 @@ const List<ModeInfo> kDuelModes = [
     name: 'Split',
     color: AppColors.violet,
     blurb: 'Three colours each, one gold — it decides the match',
-    emoji: '🌗',
+    icon: AppIcons.split,
   ),
   ModeInfo(
     id: 'pour',
     name: 'Pour',
     color: AppColors.p2,
     blurb: 'Sort duel · claim a tube, go again',
-    emoji: '🧪',
+    icon: AppIcons.pour,
   ),
   ModeInfo(
     id: 'fuse',
     name: 'Fuse',
     color: AppColors.p1,
     blurb: 'Merge equal tiles · reach 4 to claim the square',
-    emoji: '💠',
+    icon: AppIcons.gem,
   ),
   ModeInfo(
     id: 'recipe',
     name: 'Recipe',
     color: AppColors.gold,
     blurb: 'Race to blend your secret formula first',
-    emoji: '📜',
+    icon: AppIcons.scroll,
   ),
 ];
 

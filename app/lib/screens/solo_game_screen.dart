@@ -11,6 +11,7 @@ import '../theme/app_colors.dart';
 import '../theme/board_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/tube_palettes.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/app_route.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/game_result_panel.dart';
@@ -457,12 +458,16 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         _HintChip(
-                          label: '💡 Reveal move · 40🪙',
+                          icon: AppIcons.bulb,
+                          label: 'Reveal move',
+                          cost: 40,
                           onTap: _revealHint,
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         _HintChip(
-                          label: '🧪 Add tube · 60🪙',
+                          icon: AppIcons.addTube,
+                          label: 'Add tube',
+                          cost: 60,
                           onTap: _addTubeHint,
                         ),
                       ],
@@ -515,7 +520,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen>
             ? starsEarned
             : null,
         subtitle: widget.isDaily
-            ? '$timeStr · ${board.moves} moves · 🔥 streak +1 · +50 coins'
+            ? '$timeStr · ${board.moves} moves · streak +1 · +50 coins'
             : '$timeStr · ${board.moves} moves${coinsEarned != null ? ' · +$coinsEarned coins' : ''}',
         unlockedAvatarIds: newlyUnlockedAvatars,
         actions: actions,
@@ -590,10 +595,14 @@ class _Stat extends StatelessWidget {
   }
 }
 
+const _chipText = TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.txt);
+
 class _HintChip extends StatelessWidget {
+  final AppIcons icon;
   final String label;
+  final int cost;
   final VoidCallback onTap;
-  const _HintChip({required this.label, required this.onTap});
+  const _HintChip({required this.icon, required this.label, required this.cost, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -606,9 +615,14 @@ class _HintChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(13),
           border: Border.all(color: AppColors.outline, width: 2.5),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppIcon(icon, size: 15),
+            const SizedBox(width: 5),
+            Text('$label · ', style: _chipText),
+            CoinAmount(cost, style: _chipText, iconSize: 13),
+          ],
         ),
       ),
     );

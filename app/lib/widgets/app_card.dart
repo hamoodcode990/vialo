@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
+import 'app_icon.dart';
 
 /// A rounded, shadowed, tappable card — the base surface used for mode
 /// tiles, hub rows, and list rows throughout the app (decant.html's
@@ -76,7 +77,7 @@ class _AppCardState extends State<AppCard> {
 /// A row-style card: leading icon tile, title/subtitle, trailing chevron.
 /// Port of decant.html's `.hub-card`.
 class HubCard extends StatelessWidget {
-  final String emoji;
+  final AppIcons icon;
   final Color accentColor;
   final String title;
   final String subtitle;
@@ -84,7 +85,7 @@ class HubCard extends StatelessWidget {
 
   const HubCard({
     super.key,
-    required this.emoji,
+    required this.icon,
     required this.accentColor,
     required this.title,
     required this.subtitle,
@@ -109,7 +110,7 @@ class HubCard extends StatelessWidget {
                 colors: [accentColor, Color.lerp(accentColor, Colors.black, 0.3)!],
               ),
             ),
-            child: Text(emoji, style: const TextStyle(fontSize: 22)),
+            child: AppIcon(icon, size: 28),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(

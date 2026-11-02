@@ -8,6 +8,7 @@ import '../state/profile_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/tube_palettes.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/header_bar.dart' show formatLifeCountdown;
 
@@ -103,7 +104,8 @@ class StoreScreen extends ConsumerWidget {
             _IapRow(
               title: 'Refill 1 life',
               subtitle: null,
-              price: '75🪙',
+              price: '75',
+              priceIsCoins: true,
               accent: AppColors.gold,
               disabledLabel: livesFull ? 'Full' : null,
               onTap: () => AppToast.show(monetize.buyLifeWithCoins(75)),
@@ -168,7 +170,13 @@ class _LivesStatusCard extends StatelessWidget {
           Row(
             children: [
               if (unlimited)
-                const Text('❤️ ∞', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.life))
+                const Row(
+                  children: [
+                    AppIcon(AppIcons.heart, size: 20),
+                    SizedBox(width: 6),
+                    Text('∞', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.life)),
+                  ],
+                )
               else
                 Row(
                   children: [
@@ -202,7 +210,8 @@ class _IapRow extends StatelessWidget {
 
   /// When set, the button shows this instead of the price and does nothing.
   final String? disabledLabel;
-  const _IapRow({required this.title, required this.subtitle, required this.price, this.accent = AppColors.p1, this.disabledLabel, required this.onTap});
+  final bool priceIsCoins;
+  const _IapRow({required this.title, required this.subtitle, required this.price, this.accent = AppColors.p1, this.disabledLabel, this.priceIsCoins = false, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -231,7 +240,7 @@ class _IapRow extends StatelessWidget {
           if (price != null)
             GestureDetector(
               onTap: disabledLabel != null ? null : onTap,
-              child: _StoreButton(label: disabledLabel ?? price!, accent: accent, enabled: disabledLabel == null),
+              child: _StoreButton(label: disabledLabel ?? price!, accent: accent, enabled: disabledLabel == null, trailing: priceIsCoins && disabledLabel == null ? AppIcons.coin : null),
             )
           else
             Icon(Icons.check_circle_rounded, color: accent),
@@ -246,7 +255,9 @@ class _StoreButton extends StatelessWidget {
   final String label;
   final Color accent;
   final bool enabled;
-  const _StoreButton({required this.label, required this.accent, this.enabled = true});
+  final AppIcons? leading;
+  final AppIcons? trailing;
+  const _StoreButton({required this.label, required this.accent, this.enabled = true, this.leading, this.trailing});
 
   @override
   Widget build(BuildContext context) {
@@ -258,9 +269,16 @@ class _StoreButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.outline, width: 2.5),
       ),
-      child: Text(
-        label,
-        style: TextStyle(color: enabled ? Colors.white : AppColors.mute, fontWeight: FontWeight.w800, fontSize: 13),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (leading != null) ...[AppIcon(leading!, size: 13), const SizedBox(width: 5)],
+          Text(
+            label,
+            style: TextStyle(color: enabled ? Colors.white : AppColors.mute, fontWeight: FontWeight.w800, fontSize: 13),
+          ),
+          if (trailing != null) ...[const SizedBox(width: 4), AppIcon(trailing!, size: 14)],
+        ],
       ),
     );
   }
@@ -314,7 +332,8 @@ class _WatchAdRowState extends State<_WatchAdRow> {
                     setState(() => _loading = false);
                   },
             child: _StoreButton(
-              label: widget.disabledLabel ?? (_loading ? 'Loading…' : '▶ Watch'),
+              label: widget.disabledLabel ?? (_loading ? 'Loading…' : 'Watch'),
+              leading: widget.disabledLabel == null && !_loading ? AppIcons.play : null,
               accent: widget.accent,
               enabled: widget.disabledLabel == null,
             ),
@@ -324,6 +343,8 @@ class _WatchAdRowState extends State<_WatchAdRow> {
     );
   }
 }
+
+const _paletteName = TextStyle(fontWeight: FontWeight.w700, fontSize: 15);
 
 class _PaletteRow extends StatelessWidget {
   final String name;
@@ -359,7 +380,12 @@ class _PaletteRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('$name${owned ? '' : ' · $price🪙'}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  Row(
+                    children: [
+                      Text(owned ? name : '$name · ', style: _paletteName),
+                      if (!owned) CoinAmount(price, style: _paletteName, iconSize: 15),
+                    ],
+                  ),
                   const SizedBox(height: 6),
                   Row(children: [for (final c in colors.take(9)) Container(width: 14, height: 14, margin: const EdgeInsets.only(right: 4), decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(4)))]),
                 ],
