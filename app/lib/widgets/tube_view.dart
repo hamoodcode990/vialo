@@ -19,6 +19,13 @@ class TubeView extends StatefulWidget {
   final String? capLabel;
   final Color? capColor;
 
+  /// Set while a pour is moving liquid through this tube.
+  final TubeLive? live;
+
+  /// True while a pour is drawing this tube's glass elsewhere (the slot and
+  /// its label stay).
+  final bool bodyHidden;
+
   /// This tube's position in the row — staggers its one-time entrance pop-in
   /// (EntranceReveal) so the whole board doesn't materialize in a single
   /// frame. Purely cosmetic/perf, no effect on gameplay.
@@ -40,6 +47,8 @@ class TubeView extends StatefulWidget {
     this.dimmed = false,
     this.capLabel,
     this.capColor,
+    this.live,
+    this.bodyHidden = false,
     this.index = 0,
     this.shakeTrigger = 0,
     this.onTap,
@@ -55,61 +64,17 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
     duration: const Duration(milliseconds: 320),
   );
 
-  // Squash-and-stretch settle (CLAUDE.md Step 5) whenever this tube's
-  // contents change — covers both the destination landing a pour and the
-  // source tube being disturbed by one, with no extra wiring from callers:
-  // TubeView just reacts to its own contents diffing on rebuild.
-  late final AnimationController _settleCtrl = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 260),
-  );
-  static final Animatable<double> _settleTween = TweenSequence([
-    TweenSequenceItem(
-      tween: Tween(
-        begin: 1.0,
-        end: 0.88,
-      ).chain(CurveTween(curve: Curves.easeOut)),
-      weight: 30,
-    ),
-    TweenSequenceItem(
-      tween: Tween(
-        begin: 0.88,
-        end: 1.05,
-      ).chain(CurveTween(curve: Curves.easeOut)),
-      weight: 35,
-    ),
-    TweenSequenceItem(
-      tween: Tween(
-        begin: 1.05,
-        end: 1.0,
-      ).chain(CurveTween(curve: Curves.easeOut)),
-      weight: 35,
-    ),
-  ]);
-
   @override
   void didUpdateWidget(TubeView old) {
     super.didUpdateWidget(old);
     if (widget.shakeTrigger != old.shakeTrigger) {
       _shakeCtrl.forward(from: 0);
     }
-    if (!_sameContents(old.contents, widget.contents)) {
-      _settleCtrl.forward(from: 0);
-    }
-  }
-
-  bool _sameContents(List<int> a, List<int> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
   }
 
   @override
   void dispose() {
     _shakeCtrl.dispose();
-    _settleCtrl.dispose();
     super.dispose();
   }
 
@@ -137,6 +102,7 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
         capacity: widget.capacity,
         segments: segments,
         sealed: widget.sealed,
+        live: widget.live,
       ),
     );
 
@@ -170,19 +136,7 @@ class _TubeViewState extends State<TubeView> with TickerProviderStateMixin {
       ),
     );
 
-    glass = AnimatedBuilder(
-      animation: _settleCtrl,
-      child: glass,
-      builder: (context, child) => Transform(
-        alignment: Alignment.bottomCenter,
-        transform: Matrix4.diagonal3Values(
-          1,
-          _settleTween.evaluate(_settleCtrl),
-          1,
-        ),
-        child: child,
-      ),
-    );
+    if (widget.bodyHidden) glass = Opacity(opacity: 0, child: glass);
 
     return EntranceReveal(
       delay: Duration(milliseconds: (widget.index * 25).clamp(0, 260)),

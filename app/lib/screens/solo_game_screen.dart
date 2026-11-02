@@ -14,7 +14,8 @@ import '../theme/tube_palettes.dart';
 import '../widgets/app_route.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/game_result_panel.dart';
-import '../widgets/pour_flight_overlay.dart';
+import '../widgets/pour_animation.dart';
+import '../widgets/tube_painter.dart' show mergeSegments;
 import '../widgets/tube_view.dart';
 
 /// Solo sort: a single-player board with a free undo, paid extra undos, and
@@ -35,7 +36,8 @@ class SoloGameScreen extends ConsumerStatefulWidget {
   ConsumerState<SoloGameScreen> createState() => _SoloGameScreenState();
 }
 
-class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
+class _SoloGameScreenState extends ConsumerState<SoloGameScreen>
+    with TickerProviderStateMixin {
   late SoloBoard board;
   int? selected;
   int shakeTube = -1;
@@ -50,7 +52,13 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
   bool animating = false;
 
   final GlobalKey _boardKey = GlobalKey();
-  final GlobalKey<PourFlightOverlayState> _flightKey = GlobalKey();
+  late final PourDirector _pours = PourDirector(
+    vsync: this,
+    onChanged: () {
+      if (mounted) setState(() {});
+    },
+    slotRect: _slotRect,
+  );
   List<GlobalKey> _tubeKeys = [];
 
   // Read once and kept, rather than `ref.read` at dispose time — by then the
@@ -78,10 +86,14 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
   void dispose() {
     _audio.playMenuMusic();
     _ticker?.cancel();
+    _pours.dispose();
     super.dispose();
   }
 
   void _initBoard() {
+    _pours.cancelAll();
+    animating = false;
+    selected = null;
     final int seed;
     final int colors, empty;
     int? moveLimit;
@@ -139,10 +151,17 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
     _startPour(s, i);
   }
 
-  /// Plays the flying-droplet animation (Step 5) then commits the actual
-  /// pour once the last drop lands — see DuelTubeGameScreen's twin of this
-  /// for the full rationale (mirrors decant.html's animPour-then-act
-  /// ordering). Falls back to an immediate pour if rects aren't measurable.
+  /// The tube's slot in the board's coordinates, for the pour stage.
+  Rect? _slotRect(int i) {
+    if (i >= _tubeKeys.length) return null;
+    final boardBox = _boardKey.currentContext?.findRenderObject() as RenderBox?;
+    final box = _tubeKeys[i].currentContext?.findRenderObject() as RenderBox?;
+    if (boardBox == null || box == null || !box.attached || !boardBox.attached) return null;
+    return box.localToGlobal(Offset.zero, ancestor: boardBox) & box.size;
+  }
+
+  /// Plays the pour, then commits it to the board once, when the stream ends.
+  /// [animating] blocks input until then, so rapid taps can't pour twice.
   void _startPour(int s, int d) {
     final srcTube = board.tubes[s];
     final col = srcTube.last;
@@ -151,37 +170,32 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
       n++;
       k--;
     }
-    final boardBox = _boardKey.currentContext?.findRenderObject() as RenderBox?;
-    final srcBox =
-        _tubeKeys[s].currentContext?.findRenderObject() as RenderBox?;
-    final dstBox =
-        _tubeKeys[d].currentContext?.findRenderObject() as RenderBox?;
-    if (n == 0 || boardBox == null || srcBox == null || dstBox == null) {
+    if (n == 0 || _slotRect(s) == null || _slotRect(d) == null) {
       _commitPour(s, d);
       return;
     }
-    final srcRect =
-        srcBox.localToGlobal(Offset.zero, ancestor: boardBox) & srcBox.size;
-    final dstRect =
-        dstBox.localToGlobal(Offset.zero, ancestor: boardBox) & dstBox.size;
     final palette = tubePaletteById(ref.read(profileProvider).paletteId);
-    setState(() => animating = true);
+    Color colorOf(int idx) => boardColour(palette, idx);
     final audio = ref.read(audioControllerProvider);
-    for (var i = 0; i < n; i++) {
-      Future.delayed(Duration(milliseconds: i * 72), () => audio.pourDrip(i));
-      Future.delayed(Duration(milliseconds: i * 72 + 475), audio.splash);
-    }
-    _flightKey.currentState!.playPour(
-      from: srcRect,
-      to: dstRect,
-      color: boardColour(palette, col),
-      count: n,
-      onDone: () {
+    animating = true;
+    _pours.start(PourSpec(
+      source: s,
+      target: d,
+      units: n,
+      color: colorOf(col),
+      sourceBefore: mergeSegments(srcTube, colorOf),
+      targetUnitsBefore: board.tubes[d].length,
+      capacity: kCap,
+      lifted: true,
+      reduceMotion: MediaQuery.disableAnimationsOf(context),
+      onUnit: audio.pourDrip,
+      onStreamEnd: () {
         if (!mounted) return;
-        setState(() => animating = false);
+        audio.splash();
+        animating = false;
         _commitPour(s, d);
       },
-    );
+    ));
   }
 
   void _commitPour(int s, int d) {
@@ -246,7 +260,8 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
   }
 
   void _undo() {
-    if (!board.canUndo) return;
+    if (!board.canUndo || animating) return;
+    _pours.cancelAll();
     final ctrl = ref.read(profileControllerProvider.notifier);
     if (board.freeUndo > 0) {
       board.freeUndo--;
@@ -392,6 +407,8 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
                                   capacity: kCap,
                                   contents: board.tubes[i],
                                   colorOf: colorOf,
+                                  live: _pours.live(i, w),
+                                  bodyHidden: _pours.isLifted(i),
                                   selected: selected == i,
                                   isTarget:
                                       (selected != null &&
@@ -412,7 +429,7 @@ class _SoloGameScreenState extends ConsumerState<SoloGameScreen> {
                         ),
                         Positioned.fill(
                           child: IgnorePointer(
-                            child: PourFlightOverlay(key: _flightKey),
+                            child: PourStage(director: _pours),
                           ),
                         ),
                       ],

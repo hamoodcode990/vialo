@@ -15,7 +15,8 @@ import '../theme/mode_info.dart';
 import '../theme/spacing.dart';
 import '../theme/tube_palettes.dart';
 import '../widgets/game_result_panel.dart';
-import '../widgets/pour_flight_overlay.dart';
+import '../widgets/pour_animation.dart';
+import '../widgets/tube_painter.dart' show mergeSegments;
 import '../widgets/tube_view.dart';
 
 /// Small flat coin reward for a Quick Match AI win — deliberately not a
@@ -55,7 +56,8 @@ class DuelTubeGameScreen extends ConsumerStatefulWidget {
   ConsumerState<DuelTubeGameScreen> createState() => _DuelTubeGameScreenState();
 }
 
-class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
+class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen>
+    with TickerProviderStateMixin {
   late TubeGameEngine engine;
   late String effectiveAiKey;
   int? selected;
@@ -67,7 +69,13 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
   ({bool won, int? stars, int? coins})? levelResult;
 
   final GlobalKey _boardKey = GlobalKey();
-  final GlobalKey<PourFlightOverlayState> _flightKey = GlobalKey();
+  late final PourDirector _pours = PourDirector(
+    vsync: this,
+    onChanged: () {
+      if (mounted) setState(() {});
+    },
+    slotRect: _slotRect,
+  );
   List<GlobalKey> _tubeKeys = [];
 
   // Read once and kept, rather than `ref.read` at dispose time — by then the
@@ -92,10 +100,13 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
   @override
   void dispose() {
     _audio.playMenuMusic();
+    _pours.dispose();
     super.dispose();
   }
 
   void _initGame() {
+    _pours.cancelAll();
+    animating = false;
     effectiveAiKey = widget.aiKey ?? 'normal';
     final int seed;
     if (widget.levelNumber != null) {
@@ -179,52 +190,49 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
     });
   }
 
-  /// Plays the flying-droplet animation (Step 5) from tube [s] to tube [d],
-  /// then commits the actual engine move once the last drop lands — mirrors
-  /// decant.html's animPour-then-act ordering. Falls back to an immediate
-  /// move if the tube rects aren't measurable yet (e.g. a very first frame).
-  void _startPour(int s, int d) {
+  /// The tube's slot in the board's coordinates, for the pour stage.
+  Rect? _slotRect(int i) {
+    if (i >= _tubeKeys.length) return null;
+    final boardBox = _boardKey.currentContext?.findRenderObject() as RenderBox?;
+    final box = _tubeKeys[i].currentContext?.findRenderObject() as RenderBox?;
+    if (boardBox == null || box == null || !box.attached || !boardBox.attached) return null;
+    return box.localToGlobal(Offset.zero, ancestor: boardBox) & box.size;
+  }
+
+  /// Plays the pour, then commits it to the engine once, when the stream ends.
+  /// The bot's next move and the turn indicator follow that commit, and
+  /// [animating] blocks input until then, so rapid taps can't pour twice.
+  void _startPour(int s, int d, {bool lifted = true}) {
     final srcTube = engine.tubes[s];
     final col = srcTube.last;
-    var n = 0, k = srcTube.length - 1;
-    while (k >= 0 && srcTube[k] == col && (engine.tubes[d].length + n) < kCap) {
-      n++;
-      k--;
-    }
-    final boardBox = _boardKey.currentContext?.findRenderObject() as RenderBox?;
-    final srcBox =
-        _tubeKeys[s].currentContext?.findRenderObject() as RenderBox?;
-    final dstBox =
-        _tubeKeys[d].currentContext?.findRenderObject() as RenderBox?;
-    if (n == 0 || boardBox == null || srcBox == null || dstBox == null) {
+    // What the engine will really move: Recipe's vials take one unit at a time.
+    final n = (engine.clone() as TubeGameEngine).act(s, d)?.n ?? 0;
+    if (n == 0 || _slotRect(s) == null || _slotRect(d) == null) {
       _performMove(s, d);
       return;
     }
-    final srcRect =
-        srcBox.localToGlobal(Offset.zero, ancestor: boardBox) & srcBox.size;
-    final dstRect =
-        dstBox.localToGlobal(Offset.zero, ancestor: boardBox) & dstBox.size;
     final palette = tubePaletteById(ref.read(profileProvider).paletteId);
-    setState(() => animating = true);
+    Color colorOf(int idx) => _colorOf(palette, idx);
     final audio = ref.read(audioControllerProvider);
-    // Matches PourFlightOverlay's own timing exactly (72ms stagger, splash
-    // at rise+land = 475ms after each drop starts) so the SFX lands with
-    // the visual, same as decant.html's setTimeout(...,i*72) + SFX.drip/splash.
-    for (var i = 0; i < n; i++) {
-      Future.delayed(Duration(milliseconds: i * 72), () => audio.pourDrip(i));
-      Future.delayed(Duration(milliseconds: i * 72 + 475), audio.splash);
-    }
-    _flightKey.currentState!.playPour(
-      from: srcRect,
-      to: dstRect,
-      color: _colorOf(palette, col),
-      count: n,
-      onDone: () {
+    animating = true;
+    _pours.start(PourSpec(
+      source: s,
+      target: d,
+      units: n,
+      color: colorOf(col),
+      sourceBefore: mergeSegments(srcTube, colorOf),
+      targetUnitsBefore: engine.tubes[d].length,
+      capacity: kCap,
+      lifted: lifted,
+      reduceMotion: MediaQuery.disableAnimationsOf(context),
+      onUnit: audio.pourDrip,
+      onStreamEnd: () {
         if (!mounted) return;
-        setState(() => animating = false);
+        audio.splash();
+        animating = false;
         _performMove(s, d);
       },
-    );
+    ));
   }
 
   void _performMove(int s, int d) {
@@ -254,7 +262,7 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
       if (engine.over) _finish();
       return;
     }
-    _startPour(m.$1, m.$2);
+    _startPour(m.$1, m.$2, lifted: false);
   }
 
   void _finish() {
@@ -412,6 +420,8 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
                                   capacity: kCap,
                                   contents: engine.tubes[i],
                                   colorOf: colorOf,
+                                  live: _pours.live(i, w),
+                                  bodyHidden: _pours.isLifted(i),
                                   sealed: engine.sealed[i],
                                   selected: selected == i,
                                   isTarget:
@@ -433,7 +443,7 @@ class _DuelTubeGameScreenState extends ConsumerState<DuelTubeGameScreen> {
                         ),
                         Positioned.fill(
                           child: IgnorePointer(
-                            child: PourFlightOverlay(key: _flightKey),
+                            child: PourStage(director: _pours),
                           ),
                         ),
                       ],
